@@ -1,403 +1,375 @@
 /**
  * Authentication Module
  * ======================
- * Handles user authentication using Supabase Auth.
- * 
- * Features:
- * - Email/Password registration
- * - Email/Password login
- * - Logout
- * - Session management
- * - Auth state change listeners
+ * Handles Supabase authentication: login, register, logout, and session management
  */
 
-const AuthModule = (function() {
-    
+const AuthModule = (function () {
     const supabase = window.SupabaseClient.client;
-
-    // DOM Elements (will be initialized when DOM is ready)
     let elements = {};
 
-    /**
-     * Initialize the auth module
-     */
     function init() {
-        // Check if Supabase is configured
         if (!window.SupabaseClient.isConfigured()) {
-            showError('Supabase is not configured. Please update supabaseClient.js with your credentials.');
+            console.error("Supabase is not configured.");
+            alert("Supabase is not configured. Please check js/supabaseClient.js");
             return;
         }
 
-        // Cache DOM elements
         cacheElements();
-
-        // Set up event listeners
         setupEventListeners();
-
-        // Check for existing session
         checkSession();
 
-        // Listen for auth state changes
         supabase.auth.onAuthStateChange(handleAuthStateChange);
     }
 
-    /**
-     * Cache DOM elements for reuse
-     */
     function cacheElements() {
         elements = {
             // Forms
-            loginForm: document.getElementById('login-form'),
-            registerForm: document.getElementById('register-form'),
-            
+            loginForm: document.getElementById("login-form"),
+            registerForm: document.getElementById("register-form"),
+
             // Inputs
-            loginEmail: document.getElementById('login-email'),
-            loginPassword: document.getElementById('login-password'),
-            registerEmail: document.getElementById('register-email'),
-            registerPassword: document.getElementById('register-password'),
-            registerConfirmPassword: document.getElementById('register-confirm-password'),
-            
+            loginEmail: document.getElementById("login-email"),
+            loginPassword: document.getElementById("login-password"),
+            registerEmail: document.getElementById("register-email"),
+            registerPassword: document.getElementById("register-password"),
+            registerConfirmPassword: document.getElementById("register-confirm-password"),
+
             // Buttons
-            loginBtn: document.getElementById('login-btn'),
-            registerBtn: document.getElementById('register-btn'),
-            showRegisterBtn: document.getElementById('show-register'),
-            showLoginBtn: document.getElementById('show-login'),
-            
+            loginBtn: document.getElementById("login-btn"),
+            registerBtn: document.getElementById("register-btn"),
+            showRegisterBtn: document.getElementById("show-register"),
+            showLoginBtn: document.getElementById("show-login"),
+
             // Containers
-            loginContainer: document.getElementById('login-container'),
-            registerContainer: document.getElementById('register-container'),
-            
+            loginContainer: document.getElementById("login-container"),
+            registerContainer: document.getElementById("register-container"),
+
             // Messages
-            loginError: document.getElementById('login-error'),
-            registerError: document.getElementById('register-error'),
-            loginSuccess: document.getElementById('login-success'),
-            registerSuccess: document.getElementById('register-success')
+            loginError: document.getElementById("login-error"),
+            loginSuccess: document.getElementById("login-success"),
+            registerError: document.getElementById("register-error"),
+            registerSuccess: document.getElementById("register-success"),
+
+            // Password strength
+            passwordStrengthBar: document.getElementById("password-strength-bar"),
+            passwordStrengthText: document.getElementById("password-strength-text"),
         };
     }
 
-    /**
-     * Set up event listeners
-     */
     function setupEventListeners() {
-        // Form submissions
         if (elements.loginForm) {
-            elements.loginForm.addEventListener('submit', handleLogin);
-        }
-        
-        if (elements.registerForm) {
-            elements.registerForm.addEventListener('submit', handleRegister);
+            elements.loginForm.addEventListener("submit", handleLogin);
         }
 
-        // Toggle between login and register
+        if (elements.registerForm) {
+            elements.registerForm.addEventListener("submit", handleRegister);
+        }
+
         if (elements.showRegisterBtn) {
-            elements.showRegisterBtn.addEventListener('click', (e) => {
+            elements.showRegisterBtn.addEventListener("click", (e) => {
                 e.preventDefault();
                 showRegisterForm();
             });
         }
 
         if (elements.showLoginBtn) {
-            elements.showLoginBtn.addEventListener('click', (e) => {
+            elements.showLoginBtn.addEventListener("click", (e) => {
                 e.preventDefault();
                 showLoginForm();
             });
         }
 
-        // Password strength indicator for registration
         if (elements.registerPassword) {
-            elements.registerPassword.addEventListener('input', updatePasswordStrength);
+            elements.registerPassword.addEventListener(
+                "input",
+                updatePasswordStrength
+            );
         }
     }
 
-    /**
-     * Check for existing session
-     */
-    async function checkSession() {
-        try {
-            const session = await window.SupabaseClient.getCurrentSession();
-            
-            if (session) {
-                // User is logged in, redirect to vault
-                redirectToVault();
-            }
-        } catch (error) {
-            console.error('Session check error:', error);
-        }
-    }
-
-    /**
-     * Handle auth state changes
-     */
-    function handleAuthStateChange(event, session) {
-        if (event === 'SIGNED_IN' && session) {
-            redirectToVault();
-        } else if (event === 'SIGNED_OUT') {
-            redirectToLogin();
-        }
-    }
-
-    /**
-     * Handle login form submission
-     */
     async function handleLogin(e) {
         e.preventDefault();
-        
+
         const email = elements.loginEmail.value.trim();
         const password = elements.loginPassword.value;
 
-        // Validation
         if (!email || !password) {
-            showError('Please fill in all fields', 'login');
+            showError("Please fill in all fields", "login");
             return;
         }
 
-        // Show loading state
         setButtonLoading(elements.loginBtn, true);
         clearMessages();
 
         try {
             const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
+                email,
+                password,
             });
 
             if (error) throw error;
 
-            showSuccess('Login successful! Redirecting...', 'login');
-            
-            // Redirect will happen via onAuthStateChange
-
-        } catch (error) {
-            console.error('Login error:', error);
-            showError(getErrorMessage(error), 'login');
+            showSuccess("Login successful! Redirecting...", "login");
+            // Redirect handled by auth state change
+        } catch (err) {
+            console.error("Login error:", err);
+            showError(getErrorMessage(err), "login");
         } finally {
             setButtonLoading(elements.loginBtn, false);
         }
     }
 
-    /**
-     * Handle registration form submission
-     */
     async function handleRegister(e) {
         e.preventDefault();
-        
+
         const email = elements.registerEmail.value.trim();
         const password = elements.registerPassword.value;
         const confirmPassword = elements.registerConfirmPassword.value;
 
-        // Validation
         if (!email || !password || !confirmPassword) {
-            showError('Please fill in all fields', 'register');
+            showError("Please fill in all fields", "register");
             return;
         }
 
         if (password !== confirmPassword) {
-            showError('Passwords do not match', 'register');
+            showError("Passwords do not match", "register");
             return;
         }
 
         if (password.length < 8) {
-            showError('Password must be at least 8 characters long', 'register');
+            showError("Password must be at least 8 characters long", "register");
             return;
         }
 
-        // Show loading state
         setButtonLoading(elements.registerBtn, true);
         clearMessages();
 
         try {
             const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password
+                email,
+                password,
             });
 
             if (error) throw error;
 
-            // Check if email confirmation is required
-            if (data.user && data.user.identities && data.user.identities.length === 0) {
-                showError('An account with this email already exists', 'register');
-            } else if (data.session) {
-                // Auto-confirmed, redirect to vault
-                showSuccess('Registration successful! Redirecting...', 'register');
+            if (data.session) {
+                showSuccess(
+                    "Account created successfully! Redirecting...",
+                    "register"
+                );
             } else {
-                // Email confirmation required
-                showSuccess('Registration successful! Please check your email to confirm your account.', 'register');
-                // Clear form
+                showSuccess(
+                    "Account created! Please check your email to confirm your account.",
+                    "register"
+                );
                 elements.registerForm.reset();
+                updatePasswordStrength();
             }
-
-        } catch (error) {
-            console.error('Registration error:', error);
-            showError(getErrorMessage(error), 'register');
+        } catch (err) {
+            console.error("Register error:", err);
+            showError(getErrorMessage(err), "register");
         } finally {
             setButtonLoading(elements.registerBtn, false);
         }
     }
 
-    /**
-     * Logout the current user
-     */
     async function logout() {
         try {
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
-            
-            // Clear any stored master password
-            sessionStorage.removeItem('vaultUnlocked');
-            
+
+            sessionStorage.removeItem("vaultUnlocked");
             redirectToLogin();
-        } catch (error) {
-            console.error('Logout error:', error);
-            throw error;
+        } catch (err) {
+            console.error("Logout error:", err);
+            alert("Logout failed. Please try again.");
         }
     }
 
-    /**
-     * Update password strength indicator
-     */
-    function updatePasswordStrength() {
-        const password = elements.registerPassword.value;
-        const strength = window.CryptoModule.calculateStrength(password);
-        
-        const strengthBar = document.getElementById('password-strength-bar');
-        const strengthText = document.getElementById('password-strength-text');
-        
-        if (strengthBar && strengthText) {
-            strengthBar.style.width = strength.score + '%';
-            strengthBar.style.backgroundColor = strength.color;
-            strengthText.textContent = strength.label;
-            strengthText.style.color = strength.color;
+    async function checkSession() {
+        try {
+            const session = await window.SupabaseClient.getCurrentSession();
+            if (session) {
+                redirectToVault();
+            }
+        } catch (err) {
+            console.error("Session check error:", err);
         }
     }
 
-    /**
-     * Show register form, hide login form
-     */
-    function showRegisterForm() {
-        if (elements.loginContainer) {
-            elements.loginContainer.classList.add('hidden');
+    function handleAuthStateChange(event, session) {
+        if (event === "SIGNED_IN" && session) {
+            redirectToVault();
+        } else if (event === "SIGNED_OUT") {
+            redirectToLogin();
         }
-        if (elements.registerContainer) {
-            elements.registerContainer.classList.remove('hidden');
-        }
-        clearMessages();
     }
 
-    /**
-     * Show login form, hide register form
-     */
+    function redirectToVault() {
+        const path = window.location.pathname;
+
+        if (path.endsWith("vault.html") || path.endsWith("/vault")) {
+            return;
+        }
+
+        window.location.href = "vault.html";
+    }
+
+    function redirectToLogin() {
+        const path = window.location.pathname;
+
+        if (
+            path.endsWith("index.html") ||
+            path === "/" ||
+            path === "" ||
+            path.endsWith("/index")
+        ) {
+            return;
+        }
+
+        window.location.href = "index.html";
+    }
+
     function showLoginForm() {
-        if (elements.registerContainer) {
-            elements.registerContainer.classList.add('hidden');
-        }
-        if (elements.loginContainer) {
-            elements.loginContainer.classList.remove('hidden');
-        }
-        clearMessages();
-    }
-
-    /**
-     * Show error message
-     */
-    function showError(message, type = 'login') {
-        const errorElement = type === 'login' ? elements.loginError : elements.registerError;
-        const successElement = type === 'login' ? elements.loginSuccess : elements.registerSuccess;
-        
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.classList.remove('hidden');
-        }
-        if (successElement) {
-            successElement.classList.add('hidden');
+        if (elements.loginContainer && elements.registerContainer) {
+            elements.loginContainer.classList.remove("hidden");
+            elements.registerContainer.classList.add("hidden");
+            clearMessages();
         }
     }
 
-    /**
-     * Show success message
-     */
-    function showSuccess(message, type = 'login') {
-        const successElement = type === 'login' ? elements.loginSuccess : elements.registerSuccess;
-        const errorElement = type === 'login' ? elements.loginError : elements.registerError;
-        
-        if (successElement) {
-            successElement.textContent = message;
-            successElement.classList.remove('hidden');
-        }
-        if (errorElement) {
-            errorElement.classList.add('hidden');
+    function showRegisterForm() {
+        if (elements.loginContainer && elements.registerContainer) {
+            elements.loginContainer.classList.add("hidden");
+            elements.registerContainer.classList.remove("hidden");
+            clearMessages();
         }
     }
 
-    /**
-     * Clear all messages
-     */
+    function showError(message, type = "login") {
+        const errorEl =
+            type === "login" ? elements.loginError : elements.registerError;
+        const successEl =
+            type === "login"
+                ? elements.loginSuccess
+                : elements.registerSuccess;
+
+        if (errorEl) {
+            errorEl.textContent = message;
+            errorEl.classList.remove("hidden");
+        }
+        if (successEl) {
+            successEl.classList.add("hidden");
+        }
+    }
+
+    function showSuccess(message, type = "login") {
+        const errorEl =
+            type === "login" ? elements.loginError : elements.registerError;
+        const successEl =
+            type === "login"
+                ? elements.loginSuccess
+                : elements.registerSuccess;
+
+        if (successEl) {
+            successEl.textContent = message;
+            successEl.classList.remove("hidden");
+        }
+        if (errorEl) {
+            errorEl.classList.add("hidden");
+        }
+    }
+
     function clearMessages() {
-        [elements.loginError, elements.registerError, 
-         elements.loginSuccess, elements.registerSuccess].forEach(el => {
-            if (el) el.classList.add('hidden');
+        [
+            elements.loginError,
+            elements.registerError,
+            elements.loginSuccess,
+            elements.registerSuccess,
+        ].forEach((el) => {
+            if (el) {
+                el.textContent = "";
+                el.classList.add("hidden");
+            }
         });
     }
 
-    /**
-     * Set button loading state
-     */
-    function setButtonLoading(button, loading) {
+    function setButtonLoading(button, isLoading) {
         if (!button) return;
-        
-        if (loading) {
+
+        if (isLoading) {
             button.disabled = true;
             button.dataset.originalText = button.textContent;
-            button.innerHTML = '<span class="spinner"></span> Loading...';
+            button.innerHTML = '<span class="spinner"></span> Please wait...';
         } else {
             button.disabled = false;
-            button.textContent = button.dataset.originalText || button.textContent;
+            if (button.dataset.originalText) {
+                button.textContent = button.dataset.originalText;
+                delete button.dataset.originalText;
+            }
         }
     }
 
-    /**
-     * Get user-friendly error message
-     */
-    function getErrorMessage(error) {
-        const errorMessages = {
-            'Invalid login credentials': 'Invalid email or password',
-            'Email not confirmed': 'Please confirm your email before logging in',
-            'User already registered': 'An account with this email already exists',
-            'Password should be at least 6 characters': 'Password must be at least 6 characters',
-            'Unable to validate email address: invalid format': 'Please enter a valid email address'
+    function updatePasswordStrength() {
+        const password = elements.registerPassword
+            ? elements.registerPassword.value
+            : "";
+        const bar = elements.passwordStrengthBar;
+        const text = elements.passwordStrengthText;
+
+        if (!bar || !text) return;
+
+        let strength = 0;
+        if (password.length >= 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+        const strengthLevels = {
+            0: { width: "0%", label: "", color: "" },
+            1: { width: "25%", label: "Weak", color: "var(--color-error)" },
+            2: { width: "50%", label: "Fair", color: "var(--color-warning)" },
+            3: { width: "75%", label: "Strong", color: "var(--color-info)" },
+            4: { width: "100%", label: "Very Strong", color: "var(--color-success)" }
         };
 
-        return errorMessages[error.message] || error.message || 'An error occurred. Please try again.';
+        const level = strengthLevels[strength];
+        bar.style.width = level.width;
+        bar.style.background = level.color;
+        text.textContent = level.label;
+        text.style.color = level.color;
     }
 
-    /**
-     * Redirect to vault page
-     */
-    function redirectToVault() {
-        window.location.href = 'vault.html';
+    function getErrorMessage(error) {
+        if (!error) return "An unknown error occurred";
+
+        const msg = error.message || String(error);
+
+        if (msg.toLowerCase().includes("invalid login credentials")) {
+            return "Invalid email or password";
+        }
+        if (msg.toLowerCase().includes("email not confirmed")) {
+            return "Please confirm your email address before logging in";
+        }
+        if (msg.toLowerCase().includes("user already registered")) {
+            return "An account with this email already exists";
+        }
+
+        return msg;
     }
 
-    /**
-     * Redirect to login page
-     */
-    function redirectToLogin() {
-        window.location.href = 'index.html';
-    }
-
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init);
     } else {
         init();
     }
 
-    // Public API
     return {
         logout,
         checkSession,
-        getCurrentUser: window.SupabaseClient.getCurrentUser
+        getCurrentUser: window.SupabaseClient.getCurrentUser,
     };
-
 })();
 
-// Export for use in other modules
 window.AuthModule = AuthModule;

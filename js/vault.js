@@ -1,161 +1,192 @@
 /**
  * Vault Module
  * =============
- * Handles password vault operations including CRUD operations,
- * master password management, and UI interactions.
- * 
- * Features:
- * - Add, edit, delete passwords
- * - Client-side encryption/decryption
- * - Master password unlock mechanism
- * - Password generator
- * - Search and filter
- * - Copy to clipboard
+ * Multi-vault password manager with client-side encryption
  */
 
-const VaultModule = (function() {
-    
+const VaultModule = (function () {
     const supabase = window.SupabaseClient.client;
     const crypto = window.CryptoModule;
 
-    // State
-    let masterPassword = null;
-    let passwords = [];
-    let editingId = null;
-
-    // DOM Elements
     let elements = {};
+    let user = null;
+
+    let vaults = [];
+    let currentVaultId = null;
+    let currentVaultName = '';
+    let masterPassword = null;
+
+    let passwords = [];
+    let editTargetId = null;
+    let deleteTargetId = null;
 
     /**
-     * Initialize the vault module
+     * INITIALIZATION
      */
     async function init() {
-        // Check if user is authenticated
-        const user = await window.SupabaseClient.getCurrentUser();
-        
+        if (!window.SupabaseClient.isConfigured()) {
+            alert("Supabase is not configured. Please check js/supabaseClient.js");
+            return;
+        }
+
+        user = await window.SupabaseClient.getCurrentUser();
         if (!user) {
             window.location.href = 'index.html';
             return;
         }
 
-        // Cache DOM elements
         cacheElements();
-
-        // Set up event listeners
         setupEventListeners();
 
-        // Display user email
-        displayUserInfo(user);
-
-        // Check if vault is already unlocked (session)
-        const unlocked = sessionStorage.getItem('vaultUnlocked');
-        if (unlocked) {
-            // In production, you'd want a more secure approach
-            showVault();
-        } else {
-            showUnlockModal();
+        if (elements.userEmail) {
+            elements.userEmail.textContent = user.email;
         }
+        if (elements.userAvatar) {
+            elements.userAvatar.textContent = user.email.charAt(0).toUpperCase();
+        }
+
+        await loadVaults();
+        showVaultSelectionModal();
     }
 
     /**
-     * Cache DOM elements
+     * Cache DOM elements for performance
      */
     function cacheElements() {
         elements = {
             // Modals
+            vaultSelectionModal: document.getElementById('vault-selection-modal'),
+            createVaultModal: document.getElementById('create-vault-modal'),
             unlockModal: document.getElementById('unlock-modal'),
             addModal: document.getElementById('add-modal'),
             deleteModal: document.getElementById('delete-modal'),
-            
-            // Unlock form
+
+            // Vault selection
+            vaultList: document.getElementById('vault-list'),
+            openExistingVaultBtn: document.getElementById('open-existing-vault-btn'),
+            createNewVaultBtn: document.getElementById('create-new-vault-btn'),
+
+            // Create vault
+            newVaultName: document.getElementById('new-vault-name'),
+            newVaultMasterPassword: document.getElementById('new-vault-master-password'),
+            newVaultConfirmPassword: document.getElementById('new-vault-confirm-password'),
+            confirmCreateVaultBtn: document.getElementById('confirm-create-vault-btn'),
+            cancelCreateVaultBtn: document.getElementById('cancel-create-vault-btn'),
+            createVaultError: document.getElementById('create-vault-error'),
+            newVaultPasswordStrengthBar: document.getElementById('new-vault-password-strength-bar'),
+            newVaultPasswordStrengthText: document.getElementById('new-vault-password-strength-text'),
+
+            // Unlock
             masterPasswordInput: document.getElementById('master-password'),
             unlockBtn: document.getElementById('unlock-btn'),
             unlockError: document.getElementById('unlock-error'),
-            
-            // Main vault
+            unlockVaultName: document.getElementById('unlock-vault-name'),
+            backToVaultSelectionBtn: document.getElementById('back-to-vault-selection-btn'),
+
+            // Vault main
             vaultContainer: document.getElementById('vault-container'),
+            currentVaultName: document.getElementById('current-vault-name'),
+            currentVaultSubtitle: document.getElementById('current-vault-subtitle'),
             passwordList: document.getElementById('password-list'),
             emptyState: document.getElementById('empty-state'),
-            searchInput: document.getElementById('search-input'),
-            
+
+            // Header buttons
+            logoutBtn: document.getElementById('logout-btn'),
+            lockBtn: document.getElementById('lock-btn'),
+            addNewBtn: document.getElementById('add-new-btn'),
+            userEmail: document.getElementById('user-email'),
+            userAvatar: document.getElementById('user-avatar'),
+
             // Add/Edit form
-            addForm: document.getElementById('add-form'),
-            modalTitle: document.getElementById('modal-title'),
+            addModalTitle: document.getElementById('add-modal-title'),
+            addError: document.getElementById('add-error'),
             siteNameInput: document.getElementById('site-name'),
             siteUrlInput: document.getElementById('site-url'),
             usernameInput: document.getElementById('username'),
             passwordInput: document.getElementById('password'),
             notesInput: document.getElementById('notes'),
-            generateBtn: document.getElementById('generate-btn'),
-            togglePasswordBtn: document.getElementById('toggle-password'),
-            saveBtn: document.getElementById('save-btn'),
-            cancelBtn: document.getElementById('cancel-btn'),
-            formError: document.getElementById('form-error'),
-            
-            // Password strength
-            strengthBar: document.getElementById('new-password-strength-bar'),
-            strengthText: document.getElementById('new-password-strength-text'),
-            
-            // Delete confirmation
-            deleteConfirmBtn: document.getElementById('delete-confirm-btn'),
-            deleteCancelBtn: document.getElementById('delete-cancel-btn'),
-            
-            // Header
-            userEmail: document.getElementById('user-email'),
-            logoutBtn: document.getElementById('logout-btn'),
-            addNewBtn: document.getElementById('add-new-btn'),
-            lockBtn: document.getElementById('lock-btn')
+            generatePasswordBtn: document.getElementById('generate-password-btn'),
+            savePasswordBtn: document.getElementById('save-password-btn'),
+            cancelAddBtn: document.getElementById('cancel-add-btn'),
+
+            // Delete
+            confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
+            cancelDeleteBtn: document.getElementById('cancel-delete-btn'),
+
+            // Search
+            searchInput: document.getElementById('search-input'),
+
+            // Toast
+            toast: document.getElementById('toast')
         };
     }
 
     /**
-     * Set up event listeners
+     * Setup event listeners
      */
     function setupEventListeners() {
-        // Unlock form
+        // Vault selection
+        if (elements.createNewVaultBtn) {
+            elements.createNewVaultBtn.addEventListener('click', showCreateVaultModal);
+        }
+        if (elements.openExistingVaultBtn) {
+            elements.openExistingVaultBtn.addEventListener('click', handleOpenExistingVaultClick);
+        }
+
+        // Vault list click (selection)
+        if (elements.vaultList) {
+            elements.vaultList.addEventListener('click', handleVaultListClick);
+        }
+
+        // Create vault modal
+        if (elements.confirmCreateVaultBtn) {
+            elements.confirmCreateVaultBtn.addEventListener('click', handleCreateVault);
+        }
+        if (elements.cancelCreateVaultBtn) {
+            elements.cancelCreateVaultBtn.addEventListener('click', hideCreateVaultModal);
+        }
+        if (elements.newVaultMasterPassword) {
+            elements.newVaultMasterPassword.addEventListener('input', updateNewVaultPasswordStrength);
+        }
+
+        // Unlock
         if (elements.unlockBtn) {
             elements.unlockBtn.addEventListener('click', handleUnlock);
         }
         if (elements.masterPasswordInput) {
-            elements.masterPasswordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') handleUnlock();
+            elements.masterPasswordInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    handleUnlock();
+                }
+            });
+        }
+        if (elements.backToVaultSelectionBtn) {
+            elements.backToVaultSelectionBtn.addEventListener('click', () => {
+                closeUnlockModal();
+                showVaultSelectionModal();
             });
         }
 
-        // Add/Edit form
-        if (elements.addForm) {
-            elements.addForm.addEventListener('submit', handleSave);
-        }
-        if (elements.cancelBtn) {
-            elements.cancelBtn.addEventListener('click', closeAddModal);
-        }
-        if (elements.generateBtn) {
-            elements.generateBtn.addEventListener('click', generatePassword);
-        }
-        if (elements.togglePasswordBtn) {
-            elements.togglePasswordBtn.addEventListener('click', togglePasswordVisibility);
-        }
-        if (elements.passwordInput) {
-            elements.passwordInput.addEventListener('input', updateNewPasswordStrength);
-        }
-
-        // Delete confirmation
-        if (elements.deleteConfirmBtn) {
-            elements.deleteConfirmBtn.addEventListener('click', confirmDelete);
-        }
-        if (elements.deleteCancelBtn) {
-            elements.deleteCancelBtn.addEventListener('click', closeDeleteModal);
-        }
-
-        // Header actions
-        if (elements.logoutBtn) {
-            elements.logoutBtn.addEventListener('click', handleLogout);
-        }
+        // Add / Edit
         if (elements.addNewBtn) {
             elements.addNewBtn.addEventListener('click', () => openAddModal());
         }
-        if (elements.lockBtn) {
-            elements.lockBtn.addEventListener('click', lockVault);
+        if (elements.generatePasswordBtn) {
+            elements.generatePasswordBtn.addEventListener('click', handleGeneratePassword);
+        }
+        if (elements.savePasswordBtn) {
+            elements.savePasswordBtn.addEventListener('click', handleSavePassword);
+        }
+        if (elements.cancelAddBtn) {
+            elements.cancelAddBtn.addEventListener('click', closeAddModal);
+        }
+
+        // Delete
+        if (elements.confirmDeleteBtn) {
+            elements.confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
+        }
+        if (elements.cancelDeleteBtn) {
+            elements.cancelDeleteBtn.addEventListener('click', closeDeleteModal);
         }
 
         // Search
@@ -163,198 +194,581 @@ const VaultModule = (function() {
             elements.searchInput.addEventListener('input', handleSearch);
         }
 
-        // Close modals on backdrop click
+        // Lock & Logout
+        if (elements.lockBtn) {
+            elements.lockBtn.addEventListener('click', handleLock);
+        }
+        if (elements.logoutBtn) {
+            elements.logoutBtn.addEventListener('click', handleLogout);
+        }
+
+        // Modal backdrop click to close
         document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
             backdrop.addEventListener('click', (e) => {
                 if (e.target === backdrop) {
-                    backdrop.classList.add('hidden');
+                    if (backdrop === elements.addModal) closeAddModal();
+                    if (backdrop === elements.deleteModal) closeDeleteModal();
+                    if (backdrop === elements.createVaultModal) hideCreateVaultModal();
+                    // Don't close vault selection or unlock on backdrop click
                 }
             });
         });
     }
 
-    /**
-     * Display user info in header
-     */
-    function displayUserInfo(user) {
-        if (elements.userEmail) {
-            elements.userEmail.textContent = user.email;
+    /** ----------------------------------
+     *  VAULT OPERATIONS
+     *  ---------------------------------- */
+
+    async function loadVaults() {
+        try {
+            const { data, error } = await supabase
+                .from('vaults')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
+            vaults = data || [];
+            renderVaultList();
+        } catch (error) {
+            console.error('Load vaults error:', error);
+            showToast('Failed to load vaults', 'error');
         }
     }
 
-    /**
-     * Handle vault unlock
-     */
-    async function handleUnlock() {
-        const password = elements.masterPasswordInput.value;
+    function renderVaultList() {
+        if (!elements.vaultList) return;
+
+        elements.vaultList.innerHTML = '';
+
+        if (!vaults.length) {
+            const info = document.createElement('div');
+            info.className = 'vault-list-empty';
+            info.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <p>No vaults yet. Create your first vault to get started.</p>
+            `;
+            elements.vaultList.appendChild(info);
+            return;
+        }
+
+        vaults.forEach(vault => {
+            const item = document.createElement('div');
+            item.className = 'vault-list-item';
+            item.dataset.id = vault.id;
+
+            const icon = document.createElement('div');
+            icon.className = 'vault-list-icon';
+            icon.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                </svg>
+            `;
+
+            const content = document.createElement('div');
+            content.className = 'vault-list-content';
+
+            const title = document.createElement('div');
+            title.className = 'vault-list-title';
+            title.textContent = vault.name;
+
+            const subtitle = document.createElement('div');
+            subtitle.className = 'vault-list-subtitle';
+            const date = new Date(vault.created_at);
+            subtitle.textContent = `Created ${date.toLocaleDateString()}`;
+
+            content.appendChild(title);
+            content.appendChild(subtitle);
+
+            const check = document.createElement('div');
+            check.className = 'vault-list-check';
+            check.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="16" height="16">
+                    <polyline points="20,6 9,17 4,12"></polyline>
+                </svg>
+            `;
+
+            item.appendChild(icon);
+            item.appendChild(content);
+            item.appendChild(check);
+
+            if (vault.id === currentVaultId) {
+                item.classList.add('active');
+            }
+
+            elements.vaultList.appendChild(item);
+        });
+    }
+
+    function showVaultSelectionModal() {
+        if (elements.vaultSelectionModal) {
+            elements.vaultSelectionModal.classList.remove('hidden');
+        }
+        if (elements.vaultContainer) {
+            elements.vaultContainer.classList.add('hidden');
+        }
+        masterPassword = null;
+        passwords = [];
+    }
+
+    function hideVaultSelectionModal() {
+        if (elements.vaultSelectionModal) {
+            elements.vaultSelectionModal.classList.add('hidden');
+        }
+    }
+
+    function showCreateVaultModal() {
+        hideVaultSelectionModal();
+        if (elements.createVaultModal) {
+            elements.createVaultModal.classList.remove('hidden');
+        }
+        if (elements.newVaultName) {
+            elements.newVaultName.value = '';
+        }
+        if (elements.newVaultMasterPassword) {
+            elements.newVaultMasterPassword.value = '';
+        }
+        if (elements.newVaultConfirmPassword) {
+            elements.newVaultConfirmPassword.value = '';
+        }
+        if (elements.createVaultError) {
+            elements.createVaultError.classList.add('hidden');
+        }
+        updateNewVaultPasswordStrength();
+    }
+
+    function hideCreateVaultModal() {
+        if (elements.createVaultModal) {
+            elements.createVaultModal.classList.add('hidden');
+        }
+        showVaultSelectionModal();
+    }
+
+    function handleVaultListClick(e) {
+        const item = e.target.closest('.vault-list-item');
+        if (!item) return;
+
+        const id = item.dataset.id;
+        const vault = vaults.find(v => v.id === id);
+        if (!vault) return;
+
+        currentVaultId = vault.id;
+        currentVaultName = vault.name;
+
+        document.querySelectorAll('.vault-list-item').forEach(el => {
+            el.classList.remove('active');
+        });
+        item.classList.add('active');
+    }
+
+    async function handleCreateVault() {
+        const name = elements.newVaultName ? elements.newVaultName.value.trim() : '';
+        const password = elements.newVaultMasterPassword ? elements.newVaultMasterPassword.value : '';
+        const confirmPassword = elements.newVaultConfirmPassword ? elements.newVaultConfirmPassword.value : '';
+
+        if (!name) {
+            showCreateVaultError('Please enter a vault name.');
+            return;
+        }
 
         if (!password) {
-            showUnlockError('Please enter your master password');
+            showCreateVaultError('Please enter a master password.');
             return;
         }
 
         if (password.length < 8) {
-            showUnlockError('Master password must be at least 8 characters');
+            showCreateVaultError('Master password must be at least 8 characters.');
             return;
         }
 
-        setButtonLoading(elements.unlockBtn, true);
+        if (password !== confirmPassword) {
+            showCreateVaultError('Passwords do not match.');
+            return;
+        }
 
         try {
-            // Store master password in memory (never sent to server)
+            const { data, error } = await supabase
+                .from('vaults')
+                .insert({
+                    user_id: user.id,
+                    name: name
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            vaults.push(data);
+            currentVaultId = data.id;
+            currentVaultName = data.name;
             masterPassword = password;
 
-            // Mark vault as unlocked in session
-            sessionStorage.setItem('vaultUnlocked', 'true');
+            renderVaultList();
+            hideCreateVaultModal();
+            hideVaultSelectionModal();
+            updateCurrentVaultInfo();
 
-            // Load passwords
+            if (elements.vaultContainer) {
+                elements.vaultContainer.classList.remove('hidden');
+            }
+
             await loadPasswords();
-
-            // Hide unlock modal, show vault
-            hideUnlockModal();
-            showVault();
+            showToast('Vault created successfully!');
 
         } catch (error) {
-            console.error('Unlock error:', error);
-            showUnlockError('Failed to unlock vault. Please try again.');
-            masterPassword = null;
-        } finally {
-            setButtonLoading(elements.unlockBtn, false);
+            console.error('Create vault error:', error);
+            showCreateVaultError('Failed to create vault. Please try again.');
         }
     }
 
-    /**
-     * Load passwords from Supabase
-     */
+    function showCreateVaultError(message) {
+        if (elements.createVaultError) {
+            elements.createVaultError.textContent = message;
+            elements.createVaultError.classList.remove('hidden');
+        }
+    }
+
+    function updateNewVaultPasswordStrength() {
+        const password = elements.newVaultMasterPassword ? elements.newVaultMasterPassword.value : '';
+        const bar = elements.newVaultPasswordStrengthBar;
+        const text = elements.newVaultPasswordStrengthText;
+
+        if (!bar || !text) return;
+
+        let strength = 0;
+        if (password.length >= 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+        const strengthLevels = {
+            0: { width: '0%', label: '', color: '' },
+            1: { width: '25%', label: 'Weak', color: 'var(--color-error)' },
+            2: { width: '50%', label: 'Fair', color: 'var(--color-warning)' },
+            3: { width: '75%', label: 'Strong', color: 'var(--color-info)' },
+            4: { width: '100%', label: 'Very Strong', color: 'var(--color-success)' }
+        };
+
+        const level = strengthLevels[strength];
+        bar.style.width = level.width;
+        bar.style.background = level.color;
+        text.textContent = level.label;
+        text.style.color = level.color;
+    }
+
+    function handleOpenExistingVaultClick() {
+        if (!vaults.length) {
+            showToast('Please create a vault first.', 'error');
+            return;
+        }
+        if (!currentVaultId) {
+            showToast('Please select a vault from the list.', 'error');
+            return;
+        }
+
+        const vault = vaults.find(v => v.id === currentVaultId);
+        if (vault) {
+            currentVaultName = vault.name;
+        }
+
+        hideVaultSelectionModal();
+        updateCurrentVaultInfo();
+        showUnlockModal();
+    }
+
+    function updateCurrentVaultInfo() {
+        if (elements.currentVaultName) {
+            elements.currentVaultName.textContent = currentVaultName || 'Vault';
+        }
+    }
+
+    /** ----------------------------------
+     *  UNLOCK (MASTER PASSWORD)
+     *  ---------------------------------- */
+
+    function showUnlockModal() {
+        if (elements.unlockModal) {
+            elements.unlockModal.classList.remove('hidden');
+        }
+        if (elements.unlockError) {
+            elements.unlockError.classList.add('hidden');
+            elements.unlockError.textContent = '';
+        }
+        if (elements.unlockVaultName) {
+            elements.unlockVaultName.textContent = `Enter your master password to unlock "${currentVaultName}".`;
+        }
+        if (elements.masterPasswordInput) {
+            elements.masterPasswordInput.value = '';
+            elements.masterPasswordInput.focus();
+        }
+    }
+
+    function closeUnlockModal() {
+        if (elements.unlockModal) {
+            elements.unlockModal.classList.add('hidden');
+        }
+    }
+
+    async function handleUnlock() {
+        const mp = elements.masterPasswordInput ? elements.masterPasswordInput.value : '';
+
+        if (!mp) {
+            showUnlockError('Please enter your master password.');
+            return;
+        }
+
+        masterPassword = mp;
+
+        try {
+            closeUnlockModal();
+            if (elements.vaultContainer) {
+                elements.vaultContainer.classList.remove('hidden');
+            }
+
+            await loadPasswords();
+            
+            // Validate master password by trying to decrypt first password (if any)
+            if (passwords.length > 0) {
+                try {
+                    const item = passwords[0];
+                    const [ivBase64, saltBase64] = (item.iv || '').split(':');
+                    await crypto.decrypt(
+                        item.encrypted_password,
+                        ivBase64,
+                        saltBase64,
+                        masterPassword
+                    );
+                } catch (decryptError) {
+                    // Wrong master password
+                    masterPassword = null;
+                    if (elements.vaultContainer) {
+                        elements.vaultContainer.classList.add('hidden');
+                    }
+                    showUnlockModal();
+                    showUnlockError('Incorrect master password. Please try again.');
+                    return;
+                }
+            }
+
+            sessionStorage.setItem('vaultUnlocked', '1');
+            showToast('Vault unlocked successfully!');
+        } catch (error) {
+            showUnlockError(error.message || 'Failed to unlock vault');
+        }
+    }
+
+    function showUnlockError(message) {
+        if (elements.unlockError) {
+            elements.unlockError.textContent = message;
+            elements.unlockError.classList.remove('hidden');
+        }
+    }
+
+    /** ----------------------------------
+     *  PASSWORD CRUD
+     *  ---------------------------------- */
+
     async function loadPasswords() {
+        if (!currentVaultId) {
+            console.warn('No current vault selected');
+            return;
+        }
+
         try {
             const { data, error } = await supabase
                 .from('passwords')
                 .select('*')
+                .eq('vault_id', currentVaultId)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
             passwords = data || [];
             renderPasswords();
-
         } catch (error) {
             console.error('Load passwords error:', error);
             showToast('Failed to load passwords', 'error');
         }
     }
 
-    /**
-     * Render passwords list
-     */
-    function renderPasswords(filteredPasswords = null) {
-        const list = filteredPasswords || passwords;
+    function renderPasswords(filtered = null) {
+        if (!elements.passwordList || !elements.emptyState) return;
 
-        if (list.length === 0) {
+        const list = filtered || passwords;
+
+        if (!list.length) {
             elements.passwordList.classList.add('hidden');
             elements.emptyState.classList.remove('hidden');
+            elements.passwordList.innerHTML = '';
             return;
         }
 
         elements.emptyState.classList.add('hidden');
         elements.passwordList.classList.remove('hidden');
+        elements.passwordList.innerHTML = '';
 
-        elements.passwordList.innerHTML = list.map(item => `
-            <div class="password-card" data-id="${item.id}">
+        list.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'password-card';
+            card.dataset.id = item.id;
+
+            // Get first letter for icon
+            const firstLetter = (item.site_name || 'P').charAt(0).toUpperCase();
+
+            card.innerHTML = `
                 <div class="password-card-header">
-                    <div class="password-card-icon">
-                        ${getInitial(item.site_name)}
-                    </div>
+                    <div class="password-card-icon">${firstLetter}</div>
                     <div class="password-card-info">
-                        <h3 class="password-card-title">${escapeHtml(item.site_name)}</h3>
-                        <p class="password-card-username">${escapeHtml(item.username)}</p>
-                        ${item.site_url ? `<a href="${escapeHtml(item.site_url)}" target="_blank" class="password-card-url">${escapeHtml(item.site_url)}</a>` : ''}
+                        <div class="password-card-title">${escapeHtml(item.site_name)}</div>
+                        <div class="password-card-username">${escapeHtml(item.username)}</div>
+                        ${item.site_url ? `<a class="password-card-url" href="${escapeHtml(item.site_url)}" target="_blank" rel="noopener">${escapeHtml(item.site_url)}</a>` : ''}
                     </div>
                 </div>
                 <div class="password-card-actions">
-                    <button class="btn-icon" onclick="VaultModule.copyPassword('${item.id}')" title="Copy password">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                    </button>
-                    <button class="btn-icon" onclick="VaultModule.copyUsername('${item.id}')" title="Copy username">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button class="btn-icon" title="Copy username" data-action="copy-user">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                             <circle cx="12" cy="7" r="4"></circle>
                         </svg>
                     </button>
-                    <button class="btn-icon" onclick="VaultModule.showPassword('${item.id}')" title="Show password">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                            <circle cx="12" cy="12" r="3"></circle>
+                    <button class="btn-icon" title="Copy password" data-action="copy-pass">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
                     </button>
-                    <button class="btn-icon" onclick="VaultModule.editPassword('${item.id}')" title="Edit">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <button class="btn-icon" title="Edit" data-action="edit">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                     </button>
-                    <button class="btn-icon btn-danger" onclick="VaultModule.deletePassword('${item.id}')" title="Delete">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <button class="btn-icon btn-icon-danger" title="Delete" data-action="delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <polyline points="3,6 5,6 21,6"></polyline>
+                            <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
                         </svg>
                     </button>
                 </div>
-            </div>
-        `).join('');
+            `;
+
+            // Add event listeners
+            card.querySelector('[data-action="copy-user"]').addEventListener('click', () => copyUsername(item.id));
+            card.querySelector('[data-action="copy-pass"]').addEventListener('click', () => showPasswordAction(item.id));
+            card.querySelector('[data-action="edit"]').addEventListener('click', () => editPasswordAction(item.id));
+            card.querySelector('[data-action="delete"]').addEventListener('click', () => deletePasswordAction(item.id));
+
+            elements.passwordList.appendChild(card);
+        });
     }
 
-    /**
-     * Handle save (add/edit)
-     */
-    async function handleSave(e) {
-        e.preventDefault();
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function openAddModal(item = null) {
+        editTargetId = item ? item.id : null;
+
+        if (elements.addModalTitle) {
+            elements.addModalTitle.textContent = editTargetId ? 'Edit Password' : 'Add Password';
+        }
+        if (elements.addError) {
+            elements.addError.classList.add('hidden');
+            elements.addError.textContent = '';
+        }
+
+        if (item) {
+            elements.siteNameInput.value = item.site_name || '';
+            elements.siteUrlInput.value = item.site_url || '';
+            elements.usernameInput.value = item.username || '';
+            elements.notesInput.value = item.notes || '';
+            elements.passwordInput.value = '';
+            elements.passwordInput.placeholder = 'Leave blank to keep current password';
+        } else {
+            elements.siteNameInput.value = '';
+            elements.siteUrlInput.value = '';
+            elements.usernameInput.value = '';
+            elements.notesInput.value = '';
+            elements.passwordInput.value = '';
+            elements.passwordInput.placeholder = '••••••••';
+        }
+
+        if (elements.addModal) {
+            elements.addModal.classList.remove('hidden');
+        }
+    }
+
+    function closeAddModal() {
+        if (elements.addModal) {
+            elements.addModal.classList.add('hidden');
+        }
+        editTargetId = null;
+    }
+
+    async function handleSavePassword() {
+        if (!currentVaultId) {
+            showAddError('Please select and unlock a vault first.');
+            return;
+        }
 
         const siteName = elements.siteNameInput.value.trim();
         const siteUrl = elements.siteUrlInput.value.trim();
         const username = elements.usernameInput.value.trim();
-        const password = elements.passwordInput.value;
+        const plainPassword = elements.passwordInput.value;
         const notes = elements.notesInput.value.trim();
 
-        // Validation
-        if (!siteName || !username || !password) {
-            showFormError('Please fill in all required fields');
+        if (!siteName || !username) {
+            showAddError('Site name and username are required.');
             return;
         }
 
-        setButtonLoading(elements.saveBtn, true);
+        // For new entries, password is required
+        if (!editTargetId && !plainPassword) {
+            showAddError('Password is required for new entries.');
+            return;
+        }
+
+        let encryptedData = null;
 
         try {
-            // Encrypt the password
-            const encrypted = await crypto.encrypt(password, masterPassword);
+            if (plainPassword) {
+                encryptedData = await crypto.encrypt(plainPassword, masterPassword);
+            }
 
-            const user = await window.SupabaseClient.getCurrentUser();
-
-            const passwordData = {
+            let passwordData = {
                 user_id: user.id,
+                vault_id: currentVaultId,
                 site_name: siteName,
                 site_url: siteUrl || null,
                 username: username,
-                encrypted_password: encrypted.encrypted,
-                iv: encrypted.iv + ':' + encrypted.salt, // Store IV and salt together
                 notes: notes || null,
                 updated_at: new Date().toISOString()
             };
 
-            if (editingId) {
+            if (encryptedData) {
+                passwordData.encrypted_password = encryptedData.encrypted;
+                passwordData.iv = encryptedData.iv + ':' + encryptedData.salt;
+            }
+
+            if (editTargetId) {
                 // Update existing
                 const { error } = await supabase
                     .from('passwords')
                     .update(passwordData)
-                    .eq('id', editingId);
+                    .eq('id', editTargetId);
 
                 if (error) throw error;
                 showToast('Password updated successfully');
             } else {
-                // Insert new
+                // Create new
+                passwordData.created_at = new Date().toISOString();
+
                 const { error } = await supabase
                     .from('passwords')
                     .insert([passwordData]);
@@ -363,159 +777,48 @@ const VaultModule = (function() {
                 showToast('Password added successfully');
             }
 
-            // Reload passwords and close modal
             await loadPasswords();
             closeAddModal();
-
         } catch (error) {
-            console.error('Save error:', error);
-            showFormError('Failed to save password. Please try again.');
-        } finally {
-            setButtonLoading(elements.saveBtn, false);
+            console.error('Save password error:', error);
+            showAddError(error.message || 'Failed to save password');
         }
     }
 
-    /**
-     * Open add/edit modal
-     */
-    function openAddModal(passwordId = null) {
-        editingId = passwordId;
-
-        if (passwordId) {
-            // Edit mode
-            const item = passwords.find(p => p.id === passwordId);
-            if (item) {
-                elements.modalTitle.textContent = 'Edit Password';
-                elements.siteNameInput.value = item.site_name;
-                elements.siteUrlInput.value = item.site_url || '';
-                elements.usernameInput.value = item.username;
-                elements.passwordInput.value = ''; // Don't pre-fill password
-                elements.passwordInput.placeholder = 'Enter new password or leave empty to keep current';
-                elements.notesInput.value = item.notes || '';
-            }
-        } else {
-            // Add mode
-            elements.modalTitle.textContent = 'Add New Password';
-            elements.addForm.reset();
-            elements.passwordInput.placeholder = 'Enter password';
-        }
-
-        clearFormError();
-        elements.addModal.classList.remove('hidden');
-        elements.siteNameInput.focus();
-    }
-
-    /**
-     * Close add modal
-     */
-    function closeAddModal() {
-        elements.addModal.classList.add('hidden');
-        elements.addForm.reset();
-        editingId = null;
-        clearFormError();
-        resetPasswordStrength();
-    }
-
-    /**
-     * Copy password to clipboard
-     */
-    async function copyPassword(id) {
-        const item = passwords.find(p => p.id === id);
-        if (!item) return;
-
-        try {
-            const [iv, salt] = item.iv.split(':');
-            const decrypted = await crypto.decrypt(
-                item.encrypted_password,
-                iv,
-                salt,
-                masterPassword
-            );
-
-            await navigator.clipboard.writeText(decrypted);
-            showToast('Password copied to clipboard');
-
-            // Clear clipboard after 30 seconds
-            setTimeout(async () => {
-                try {
-                    const currentClipboard = await navigator.clipboard.readText();
-                    if (currentClipboard === decrypted) {
-                        await navigator.clipboard.writeText('');
-                    }
-                } catch (e) {
-                    // Clipboard access denied, ignore
-                }
-            }, 30000);
-
-        } catch (error) {
-            console.error('Decrypt error:', error);
-            showToast('Failed to decrypt password. Check your master password.', 'error');
+    function showAddError(message) {
+        if (elements.addError) {
+            elements.addError.textContent = message;
+            elements.addError.classList.remove('hidden');
         }
     }
 
-    /**
-     * Copy username to clipboard
-     */
-    async function copyUsername(id) {
-        const item = passwords.find(p => p.id === id);
-        if (!item) return;
-
-        try {
-            await navigator.clipboard.writeText(item.username);
-            showToast('Username copied to clipboard');
-        } catch (error) {
-            showToast('Failed to copy username', 'error');
-        }
+    function handleGeneratePassword(e) {
+        e.preventDefault();
+        const generated = crypto.generatePassword(16);
+        elements.passwordInput.value = generated;
+        elements.passwordInput.type = 'text';
+        setTimeout(() => {
+            elements.passwordInput.type = 'password';
+        }, 2000);
+        showToast('Strong password generated');
     }
 
-    /**
-     * Show password in an alert (temporary reveal)
-     */
-    async function showPasswordAction(id) {
-        const item = passwords.find(p => p.id === id);
-        if (!item) return;
-
-        try {
-            const [iv, salt] = item.iv.split(':');
-            const decrypted = await crypto.decrypt(
-                item.encrypted_password,
-                iv,
-                salt,
-                masterPassword
-            );
-
-            // Show password in a temporary toast
-            showToast(`Password: ${decrypted}`, 'info', 5000);
-
-        } catch (error) {
-            console.error('Decrypt error:', error);
-            showToast('Failed to decrypt password', 'error');
-        }
-    }
-
-    /**
-     * Edit password
-     */
-    function editPasswordAction(id) {
-        openAddModal(id);
-    }
-
-    /**
-     * Delete password (show confirmation)
-     */
-    let deleteTargetId = null;
     function deletePasswordAction(id) {
         deleteTargetId = id;
-        elements.deleteModal.classList.remove('hidden');
+        if (elements.deleteModal) {
+            elements.deleteModal.classList.remove('hidden');
+        }
     }
 
-    /**
-     * Confirm delete
-     */
-    async function confirmDelete() {
-        if (!deleteTargetId) return;
+    function closeDeleteModal() {
+        if (elements.deleteModal) {
+            elements.deleteModal.classList.add('hidden');
+        }
+        deleteTargetId = null;
+    }
 
-        setButtonLoading(elements.deleteConfirmBtn, true);
+    async function handleConfirmDelete() {
+        if (!deleteTargetId) return;
 
         try {
             const { error } = await supabase
@@ -528,222 +831,140 @@ const VaultModule = (function() {
             showToast('Password deleted');
             await loadPasswords();
             closeDeleteModal();
-
         } catch (error) {
-            console.error('Delete error:', error);
+            console.error('Delete password error:', error);
             showToast('Failed to delete password', 'error');
-        } finally {
-            setButtonLoading(elements.deleteConfirmBtn, false);
         }
     }
 
-    /**
-     * Close delete modal
-     */
-    function closeDeleteModal() {
-        elements.deleteModal.classList.add('hidden');
-        deleteTargetId = null;
-    }
+    async function showPasswordAction(id) {
+        const item = passwords.find(p => p.id === id);
+        if (!item) return;
 
-    /**
-     * Generate a random password
-     */
-    function generatePassword() {
-        const password = crypto.generatePassword(20, {
-            uppercase: true,
-            lowercase: true,
-            numbers: true,
-            symbols: true
-        });
-
-        elements.passwordInput.value = password;
-        elements.passwordInput.type = 'text';
-        updateNewPasswordStrength();
-
-        // Show the password briefly then hide
-        setTimeout(() => {
-            elements.passwordInput.type = 'password';
-        }, 3000);
-    }
-
-    /**
-     * Toggle password visibility
-     */
-    function togglePasswordVisibility() {
-        const type = elements.passwordInput.type === 'password' ? 'text' : 'password';
-        elements.passwordInput.type = type;
-
-        // Update icon
-        elements.togglePasswordBtn.innerHTML = type === 'password' 
-            ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>'
-            : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
-    }
-
-    /**
-     * Update password strength indicator
-     */
-    function updateNewPasswordStrength() {
-        const password = elements.passwordInput.value;
-        const strength = crypto.calculateStrength(password);
-
-        if (elements.strengthBar) {
-            elements.strengthBar.style.width = strength.score + '%';
-            elements.strengthBar.style.backgroundColor = strength.color;
+        if (!masterPassword) {
+            showToast('Please unlock the vault first.', 'error');
+            return;
         }
-        if (elements.strengthText) {
-            elements.strengthText.textContent = strength.label;
-            elements.strengthText.style.color = strength.color;
+
+        try {
+            const [ivBase64, saltBase64] = (item.iv || '').split(':');
+            const plain = await crypto.decrypt(
+                item.encrypted_password,
+                ivBase64,
+                saltBase64,
+                masterPassword
+            );
+            await copyToClipboard(plain);
+            showToast('Password copied to clipboard');
+        } catch (error) {
+            console.error('Show password error:', error);
+            showToast('Failed to decrypt password. Check your master password.', 'error');
         }
     }
 
-    /**
-     * Reset password strength indicator
-     */
-    function resetPasswordStrength() {
-        if (elements.strengthBar) {
-            elements.strengthBar.style.width = '0%';
-        }
-        if (elements.strengthText) {
-            elements.strengthText.textContent = '';
-        }
+    async function copyUsername(id) {
+        const item = passwords.find(p => p.id === id);
+        if (!item) return;
+        await copyToClipboard(item.username);
+        showToast('Username copied');
     }
 
-    /**
-     * Handle search
-     */
+    function editPasswordAction(id) {
+        const item = passwords.find(p => p.id === id);
+        if (!item) return;
+        openAddModal(item);
+    }
+
+    /** ----------------------------------
+     *  SEARCH
+     *  ---------------------------------- */
+
     function handleSearch() {
-        const query = elements.searchInput.value.toLowerCase().trim();
-
+        const query = elements.searchInput.value.toLowerCase();
         if (!query) {
             renderPasswords();
             return;
         }
 
-        const filtered = passwords.filter(item => 
-            item.site_name.toLowerCase().includes(query) ||
-            item.username.toLowerCase().includes(query) ||
-            (item.site_url && item.site_url.toLowerCase().includes(query))
-        );
+        const filtered = passwords.filter(item => {
+            return (
+                item.site_name.toLowerCase().includes(query) ||
+                (item.username || '').toLowerCase().includes(query) ||
+                (item.site_url || '').toLowerCase().includes(query) ||
+                (item.notes || '').toLowerCase().includes(query)
+            );
+        });
 
         renderPasswords(filtered);
     }
 
-    /**
-     * Lock vault
-     */
-    function lockVault() {
+    /** ----------------------------------
+     *  LOCK & LOGOUT
+     *  ---------------------------------- */
+
+    function handleLock() {
         masterPassword = null;
         passwords = [];
-        sessionStorage.removeItem('vaultUnlocked');
-        
-        hideVault();
-        showUnlockModal();
-        
-        if (elements.masterPasswordInput) {
-            elements.masterPasswordInput.value = '';
-        }
-        if (elements.passwordList) {
-            elements.passwordList.innerHTML = '';
-        }
-    }
-
-    /**
-     * Handle logout
-     */
-    async function handleLogout() {
-        lockVault();
-        await window.AuthModule.logout();
-    }
-
-    // UI Helper functions
-    function showUnlockModal() {
-        if (elements.unlockModal) {
-            elements.unlockModal.classList.remove('hidden');
-            elements.masterPasswordInput?.focus();
-        }
-    }
-
-    function hideUnlockModal() {
-        if (elements.unlockModal) {
-            elements.unlockModal.classList.add('hidden');
-        }
-    }
-
-    function showVault() {
-        if (elements.vaultContainer) {
-            elements.vaultContainer.classList.remove('hidden');
-        }
-    }
-
-    function hideVault() {
+        currentVaultId = null;
+        currentVaultName = '';
         if (elements.vaultContainer) {
             elements.vaultContainer.classList.add('hidden');
         }
+        showVaultSelectionModal();
     }
 
-    function showUnlockError(message) {
-        if (elements.unlockError) {
-            elements.unlockError.textContent = message;
-            elements.unlockError.classList.remove('hidden');
+    async function handleLogout() {
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+
+            sessionStorage.removeItem('vaultUnlocked');
+            window.location.href = 'index.html';
+        } catch (error) {
+            console.error('Logout error:', error);
+            showToast('Failed to sign out', 'error');
         }
     }
 
-    function showFormError(message) {
-        if (elements.formError) {
-            elements.formError.textContent = message;
-            elements.formError.classList.remove('hidden');
+    /** ----------------------------------
+     *  HELPERS
+     *  ---------------------------------- */
+
+    async function copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (error) {
+            console.error('Clipboard error:', error);
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
         }
     }
 
-    function clearFormError() {
-        if (elements.formError) {
-            elements.formError.classList.add('hidden');
-        }
-    }
+    function showToast(message, type = 'success') {
+        if (!elements.toast) return;
 
-    function setButtonLoading(button, loading) {
-        if (!button) return;
+        elements.toast.textContent = message;
+        elements.toast.classList.remove('toast-success', 'toast-error');
 
-        if (loading) {
-            button.disabled = true;
-            button.dataset.originalText = button.textContent;
-            button.innerHTML = '<span class="spinner"></span>';
+        if (type === 'error') {
+            elements.toast.classList.add('toast-error');
         } else {
-            button.disabled = false;
-            button.textContent = button.dataset.originalText || button.textContent;
+            elements.toast.classList.add('toast-success');
         }
-    }
-
-    function showToast(message, type = 'success', duration = 3000) {
-        // Remove existing toast
-        const existingToast = document.querySelector('.toast');
-        if (existingToast) {
-            existingToast.remove();
-        }
-
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
 
         // Trigger animation
-        setTimeout(() => toast.classList.add('show'), 10);
+        elements.toast.classList.add('show');
 
-        // Remove after duration
         setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, duration);
-    }
-
-    function getInitial(name) {
-        return name.charAt(0).toUpperCase();
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+            elements.toast.classList.remove('show');
+        }, 3000);
     }
 
     // Initialize when DOM is ready
@@ -755,14 +976,11 @@ const VaultModule = (function() {
 
     // Public API
     return {
-        copyPassword,
         copyUsername,
         showPassword: showPasswordAction,
         editPassword: editPasswordAction,
         deletePassword: deletePasswordAction
     };
-
 })();
 
-// Export for use in other modules
 window.VaultModule = VaultModule;
