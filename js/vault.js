@@ -19,6 +19,7 @@ const VaultModule = (function () {
     let passwords = [];
     let editTargetId = null;
     let deleteTargetId = null;
+    let deleteVaultTargetId = null;
 
     /**
      * INITIALIZATION
@@ -113,6 +114,12 @@ const VaultModule = (function () {
             confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
             cancelDeleteBtn: document.getElementById('cancel-delete-btn'),
 
+            // Delete Vault
+            deleteVaultModal: document.getElementById('delete-vault-modal'),
+            deleteVaultName: document.getElementById('delete-vault-name'),
+            confirmDeleteVaultBtn: document.getElementById('confirm-delete-vault-btn'),
+            cancelDeleteVaultBtn: document.getElementById('cancel-delete-vault-btn'),
+
             // Search
             searchInput: document.getElementById('search-input'),
 
@@ -189,6 +196,14 @@ const VaultModule = (function () {
             elements.cancelDeleteBtn.addEventListener('click', closeDeleteModal);
         }
 
+        // Delete Vault
+        if (elements.confirmDeleteVaultBtn) {
+            elements.confirmDeleteVaultBtn.addEventListener('click', handleConfirmDeleteVault);
+        }
+        if (elements.cancelDeleteVaultBtn) {
+            elements.cancelDeleteVaultBtn.addEventListener('click', closeDeleteVaultModal);
+        }
+
         // Search
         if (elements.searchInput) {
             elements.searchInput.addEventListener('input', handleSearch);
@@ -208,6 +223,7 @@ const VaultModule = (function () {
                 if (e.target === backdrop) {
                     if (backdrop === elements.addModal) closeAddModal();
                     if (backdrop === elements.deleteModal) closeDeleteModal();
+                    if (backdrop === elements.deleteVaultModal) closeDeleteVaultModal();
                     if (backdrop === elements.createVaultModal) hideCreateVaultModal();
                     // Don't close vault selection or unlock on backdrop click
                 }
@@ -263,7 +279,7 @@ const VaultModule = (function () {
             const icon = document.createElement('div');
             icon.className = 'vault-list-icon';
             icon.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
                     <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
                 </svg>
             `;
@@ -283,16 +299,36 @@ const VaultModule = (function () {
             content.appendChild(title);
             content.appendChild(subtitle);
 
+            const actions = document.createElement('div');
+            actions.className = 'vault-list-actions';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'vault-list-delete';
+            deleteBtn.title = 'Delete vault';
+            deleteBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <polyline points="3,6 5,6 21,6"></polyline>
+                    <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                </svg>
+            `;
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showDeleteVaultModal(vault.id, vault.name);
+            });
+
+            actions.appendChild(deleteBtn);
+
             const check = document.createElement('div');
             check.className = 'vault-list-check';
             check.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="16" height="16">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="12" height="12">
                     <polyline points="20,6 9,17 4,12"></polyline>
                 </svg>
             `;
 
             item.appendChild(icon);
             item.appendChild(content);
+            item.appendChild(actions);
             item.appendChild(check);
 
             if (vault.id === currentVaultId) {
@@ -482,6 +518,66 @@ const VaultModule = (function () {
     function updateCurrentVaultInfo() {
         if (elements.currentVaultName) {
             elements.currentVaultName.textContent = currentVaultName || 'Vault';
+        }
+    }
+
+    /** ----------------------------------
+     *  DELETE VAULT
+     *  ---------------------------------- */
+
+    function showDeleteVaultModal(vaultId, vaultName) {
+        deleteVaultTargetId = vaultId;
+        if (elements.deleteVaultName) {
+            elements.deleteVaultName.textContent = vaultName;
+        }
+        if (elements.deleteVaultModal) {
+            elements.deleteVaultModal.classList.remove('hidden');
+        }
+    }
+
+    function closeDeleteVaultModal() {
+        if (elements.deleteVaultModal) {
+            elements.deleteVaultModal.classList.add('hidden');
+        }
+        deleteVaultTargetId = null;
+    }
+
+    async function handleConfirmDeleteVault() {
+        if (!deleteVaultTargetId) return;
+
+        try {
+            // First delete all passwords in this vault
+            const { error: passwordsError } = await supabase
+                .from('passwords')
+                .delete()
+                .eq('vault_id', deleteVaultTargetId);
+
+            if (passwordsError) throw passwordsError;
+
+            // Then delete the vault itself
+            const { error: vaultError } = await supabase
+                .from('vaults')
+                .delete()
+                .eq('id', deleteVaultTargetId);
+
+            if (vaultError) throw vaultError;
+
+            // Update local state
+            vaults = vaults.filter(v => v.id !== deleteVaultTargetId);
+            
+            // If deleted vault was current, reset selection
+            if (currentVaultId === deleteVaultTargetId) {
+                currentVaultId = null;
+                currentVaultName = '';
+            }
+
+            renderVaultList();
+            closeDeleteVaultModal();
+            showToast('Vault deleted successfully');
+
+        } catch (error) {
+            console.error('Delete vault error:', error);
+            showToast('Failed to delete vault', 'error');
         }
     }
 

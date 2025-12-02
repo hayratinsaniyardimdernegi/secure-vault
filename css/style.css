@@ -1,38 +1,39 @@
 /**
  * Password Vault Styles
  * =====================
- * Premium dark theme with gold accents for a secure, trustworthy feel.
+ * Clean light theme with dark green accents for a secure, professional feel.
  */
 
 /* ============================================
    CSS Variables / Theme
    ============================================ */
 :root {
-    /* Colors */
-    --color-bg-primary: #0a0a0f;
-    --color-bg-secondary: #12121a;
-    --color-bg-tertiary: #1a1a25;
-    --color-bg-card: #16161f;
-    --color-bg-hover: #1e1e2a;
+    /* Colors - Light theme with dark green */
+    --color-bg-primary: #f8faf9;
+    --color-bg-secondary: #ffffff;
+    --color-bg-tertiary: #f0f4f2;
+    --color-bg-card: #ffffff;
+    --color-bg-hover: #e8f0eb;
     
-    --color-accent: #d4af37;
-    --color-accent-hover: #e5c34a;
-    --color-accent-subtle: rgba(212, 175, 55, 0.1);
+    --color-accent: #1a5f3c;
+    --color-accent-hover: #2d7a52;
+    --color-accent-light: #2d7a52;
+    --color-accent-subtle: rgba(26, 95, 60, 0.08);
     
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #a0a0b0;
-    --color-text-muted: #6b6b7a;
+    --color-text-primary: #1a2e23;
+    --color-text-secondary: #4a6355;
+    --color-text-muted: #7a9485;
     
-    --color-border: #2a2a35;
-    --color-border-focus: #d4af37;
+    --color-border: #d4e0d9;
+    --color-border-focus: #1a5f3c;
     
-    --color-success: #22c55e;
-    --color-error: #ef4444;
-    --color-warning: #f97316;
-    --color-info: #3b82f6;
+    --color-success: #16a34a;
+    --color-error: #dc2626;
+    --color-warning: #ea580c;
+    --color-info: #2563eb;
     
     /* Typography */
-    --font-display: 'Playfair Display', Georgia, serif;
+    --font-display: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     
@@ -46,15 +47,15 @@
     
     /* Border Radius */
     --radius-sm: 6px;
-    --radius-md: 10px;
-    --radius-lg: 16px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
     --radius-full: 9999px;
     
     /* Shadows */
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 20px rgba(212, 175, 55, 0.2);
+    --shadow-sm: 0 1px 3px rgba(26, 46, 35, 0.08);
+    --shadow-md: 0 4px 12px rgba(26, 46, 35, 0.1);
+    --shadow-lg: 0 8px 24px rgba(26, 46, 35, 0.12);
+    --shadow-glow: 0 0 20px rgba(26, 95, 60, 0.15);
     
     /* Transitions */
     --transition-fast: 150ms ease;
@@ -86,7 +87,7 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* Background pattern */
+/* Subtle background pattern */
 body::before {
     content: '';
     position: fixed;
@@ -95,8 +96,8 @@ body::before {
     right: 0;
     bottom: 0;
     background: 
-        radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.03) 0%, transparent 40%),
-        radial-gradient(circle at 80% 80%, rgba(212, 175, 55, 0.03) 0%, transparent 40%);
+        radial-gradient(circle at 0% 0%, rgba(26, 95, 60, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, rgba(26, 95, 60, 0.03) 0%, transparent 50%);
     pointer-events: none;
     z-index: -1;
 }
@@ -116,25 +117,23 @@ a:hover {
    ============================================ */
 h1, h2, h3, h4 {
     font-family: var(--font-display);
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: -0.02em;
+    color: var(--color-text-primary);
 }
 
 h1 {
-    font-size: 2.5rem;
-    background: linear-gradient(135deg, var(--color-accent), #f4d675);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 2rem;
+    color: var(--color-accent);
 }
 
 h2 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     color: var(--color-text-primary);
 }
 
 h3 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     color: var(--color-text-primary);
 }
 
@@ -158,41 +157,41 @@ h3 {
 
 .auth-card {
     width: 100%;
-    max-width: 420px;
+    max-width: 400px;
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: var(--spacing-2xl);
+    padding: var(--spacing-xl);
     box-shadow: var(--shadow-lg);
 }
 
 .auth-header {
     text-align: center;
-    margin-bottom: var(--spacing-2xl);
+    margin-bottom: var(--spacing-xl);
 }
 
 .auth-logo {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto var(--spacing-lg);
-    background: linear-gradient(135deg, var(--color-accent), #f4d675);
+    width: 56px;
+    height: 56px;
+    margin: 0 auto var(--spacing-md);
+    background: var(--color-accent);
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-glow);
+    box-shadow: var(--shadow-md);
 }
 
 .auth-logo svg {
-    width: 32px;
-    height: 32px;
-    color: var(--color-bg-primary);
+    width: 28px;
+    height: 28px;
+    color: #ffffff;
 }
 
 .auth-subtitle {
     color: var(--color-text-secondary);
-    margin-top: var(--spacing-sm);
-    font-size: 0.95rem;
+    margin-top: var(--spacing-xs);
+    font-size: 0.875rem;
 }
 
 /* ============================================
@@ -319,10 +318,10 @@ textarea.form-input {
     align-items: center;
     justify-content: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: 12px 20px;
     font-family: var(--font-body);
-    font-size: 1rem;
-    font-weight: 500;
+    font-size: 0.875rem;
+    font-weight: 600;
     border: none;
     border-radius: var(--radius-md);
     cursor: pointer;
@@ -336,14 +335,14 @@ textarea.form-input {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--color-accent), #e5c34a);
-    color: var(--color-bg-primary);
-    font-weight: 600;
+    background: var(--color-accent);
+    color: #ffffff;
 }
 
 .btn-primary:hover:not(:disabled) {
+    background: var(--color-accent-hover);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-glow);
+    box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -355,6 +354,7 @@ textarea.form-input {
 .btn-secondary:hover:not(:disabled) {
     background: var(--color-bg-hover);
     border-color: var(--color-accent);
+    color: var(--color-accent);
 }
 
 .btn-danger {
@@ -363,7 +363,7 @@ textarea.form-input {
 }
 
 .btn-danger:hover:not(:disabled) {
-    background: #dc2626;
+    background: #b91c1c;
 }
 
 .btn-ghost {
@@ -394,13 +394,13 @@ textarea.form-input {
 }
 
 .btn-sm {
-    padding: var(--spacing-sm) var(--spacing-md);
-    font-size: 0.875rem;
+    padding: 8px 12px;
+    font-size: 0.8125rem;
 }
 
 .btn-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     background: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
@@ -414,13 +414,13 @@ textarea.form-input {
 }
 
 .btn-icon:hover {
-    background: var(--color-bg-hover);
+    background: var(--color-accent-subtle);
     color: var(--color-accent);
     border-color: var(--color-accent);
 }
 
 .btn-icon-danger:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: rgba(220, 38, 38, 0.1);
     color: var(--color-error);
     border-color: var(--color-error);
 }
@@ -462,7 +462,7 @@ textarea.form-input {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(26, 46, 35, 0.5);
     backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
@@ -473,7 +473,7 @@ textarea.form-input {
 
 .modal {
     width: 100%;
-    max-width: 440px;
+    max-width: 400px;
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
@@ -482,7 +482,7 @@ textarea.form-input {
 }
 
 .modal-lg {
-    max-width: 540px;
+    max-width: 480px;
 }
 
 @keyframes modalSlideIn {
@@ -501,30 +501,30 @@ textarea.form-input {
 }
 
 .modal-icon {
-    width: 64px;
-    height: 64px;
-    margin: 0 auto var(--spacing-lg);
-    background: linear-gradient(135deg, var(--color-accent), #f4d675);
+    width: 56px;
+    height: 56px;
+    margin: 0 auto var(--spacing-md);
+    background: var(--color-accent);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-glow);
-    color: var(--color-bg-primary);
+    box-shadow: var(--shadow-md);
+    color: #ffffff;
 }
 
 .modal-icon svg {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
 }
 
 .modal-icon-danger {
-    background: linear-gradient(135deg, var(--color-error), #f87171);
+    background: var(--color-error);
 }
 
 .modal h2 {
     text-align: center;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
 }
 
 .security-note {
@@ -558,73 +558,72 @@ textarea.form-input {
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-lg);
+    height: 48px;
 }
 
 .app-logo {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
 }
 
 .app-logo-icon {
-    width: 44px;
-    height: 44px;
-    background: linear-gradient(135deg, var(--color-accent), #f4d675);
+    width: 40px;
+    height: 40px;
+    background: var(--color-accent);
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--color-bg-primary);
+    color: #ffffff;
 }
 
 .app-logo-title {
     font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 600;
-    background: linear-gradient(135deg, var(--color-accent), #f4d675);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-accent);
 }
 
 .app-logo-subtitle {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--color-text-muted);
-    margin-top: 2px;
+    margin-top: 1px;
 }
 
 .app-header-actions {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
 }
 
 .user-info {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: 6px 12px;
     background: var(--color-bg-tertiary);
     border-radius: var(--radius-full);
+    height: 36px;
 }
 
 .user-avatar {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     background: var(--color-accent);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
-    color: var(--color-bg-primary);
+    color: #ffffff;
 }
 
 .user-email {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--color-text-secondary);
-    max-width: 180px;
+    max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -636,7 +635,7 @@ textarea.form-input {
 .vault-list {
     max-height: 280px;
     overflow-y: auto;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
 }
 
 .vault-list-empty {
@@ -647,7 +646,8 @@ textarea.form-input {
 
 .vault-list-empty svg {
     margin-bottom: var(--spacing-md);
-    opacity: 0.5;
+    opacity: 0.4;
+    color: var(--color-accent);
 }
 
 .vault-list-empty p {
@@ -658,7 +658,7 @@ textarea.form-input {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    padding: var(--spacing-md);
+    padding: 12px;
     background: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -682,9 +682,9 @@ textarea.form-input {
 }
 
 .vault-list-icon {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, var(--color-bg-hover), var(--color-bg-tertiary));
+    width: 36px;
+    height: 36px;
+    background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     display: flex;
@@ -695,9 +695,9 @@ textarea.form-input {
 }
 
 .vault-list-item.active .vault-list-icon {
-    background: linear-gradient(135deg, var(--color-accent), #f4d675);
+    background: var(--color-accent);
     border-color: var(--color-accent);
-    color: var(--color-bg-primary);
+    color: #ffffff;
 }
 
 .vault-list-content {
@@ -707,6 +707,7 @@ textarea.form-input {
 
 .vault-list-title {
     font-weight: 600;
+    font-size: 0.875rem;
     color: var(--color-text-primary);
     margin-bottom: 2px;
 }
@@ -716,11 +717,43 @@ textarea.form-input {
     color: var(--color-text-muted);
 }
 
+.vault-list-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-shrink: 0;
+}
+
+.vault-list-delete {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+}
+
+.vault-list-item:hover .vault-list-delete {
+    opacity: 1;
+}
+
+.vault-list-delete:hover {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--color-error);
+    border-color: var(--color-error);
+}
+
 .vault-list-check {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: var(--color-bg-hover);
+    background: var(--color-bg-secondary);
     border: 2px solid var(--color-border);
     display: flex;
     align-items: center;
@@ -734,41 +767,40 @@ textarea.form-input {
     opacity: 1;
     background: var(--color-accent);
     border-color: var(--color-accent);
-    color: var(--color-bg-primary);
+    color: #ffffff;
 }
 
 /* ============================================
    Vault Container
    ============================================ */
 .vault-container {
-    padding: var(--spacing-2xl) 0;
+    padding: var(--spacing-xl) 0;
 }
 
 .vault-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
     gap: var(--spacing-lg);
     margin-bottom: var(--spacing-xl);
-    flex-wrap: wrap;
 }
 
 .vault-title-area h2 {
     font-family: var(--font-display);
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     margin-bottom: var(--spacing-xs);
 }
 
 .vault-badge {
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-xs);
-    padding: var(--spacing-xs) var(--spacing-sm);
+    gap: 4px;
+    padding: 4px 8px;
     background: var(--color-accent-subtle);
-    border: 1px solid rgba(212, 175, 55, 0.2);
+    border: 1px solid rgba(26, 95, 60, 0.15);
     border-radius: var(--radius-full);
-    font-size: 0.7rem;
-    font-weight: 500;
+    font-size: 0.6875rem;
+    font-weight: 600;
     color: var(--color-accent);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -777,23 +809,22 @@ textarea.form-input {
 .vault-header-actions {
     display: flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
 }
 
 .vault-search {
     position: relative;
-    flex: 1;
-    min-width: 200px;
-    max-width: 320px;
+    width: 240px;
 }
 
 .vault-search .form-input {
-    padding-left: 44px;
+    padding-left: 40px;
+    height: 40px;
 }
 
 .vault-search-icon {
     position: absolute;
-    left: var(--spacing-md);
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
     color: var(--color-text-muted);
@@ -803,18 +834,18 @@ textarea.form-input {
 /* Password List */
 .password-list {
     display: grid;
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
 }
 
 .password-card {
     background: var(--color-bg-card);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--spacing-lg);
-    display: flex;
+    padding: var(--spacing-md);
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-lg);
+    gap: var(--spacing-md);
     transition: all var(--transition-fast);
 }
 
@@ -827,22 +858,21 @@ textarea.form-input {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    flex: 1;
     min-width: 0;
 }
 
 .password-card-icon {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, var(--color-bg-tertiary), var(--color-bg-hover));
+    width: 40px;
+    height: 40px;
+    background: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 700;
     color: var(--color-accent);
     flex-shrink: 0;
 }
@@ -854,16 +884,16 @@ textarea.form-input {
 
 .password-card-title {
     font-family: var(--font-body);
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .password-card-username {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     color: var(--color-text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -874,7 +904,7 @@ textarea.form-input {
     font-size: 0.75rem;
     color: var(--color-text-muted);
     display: block;
-    margin-top: var(--spacing-xs);
+    margin-top: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -886,7 +916,7 @@ textarea.form-input {
 
 .password-card-actions {
     display: flex;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-xs);
     flex-shrink: 0;
 }
 
@@ -897,11 +927,11 @@ textarea.form-input {
 }
 
 .empty-state-icon {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto var(--spacing-xl);
+    width: 72px;
+    height: 72px;
+    margin: 0 auto var(--spacing-lg);
     background: var(--color-bg-tertiary);
-    border: 1px dashed var(--color-border);
+    border: 2px dashed var(--color-border);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -911,15 +941,16 @@ textarea.form-input {
 
 .empty-state h3 {
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     margin-bottom: var(--spacing-sm);
     color: var(--color-text-primary);
 }
 
 .empty-state p {
     color: var(--color-text-secondary);
-    max-width: 320px;
+    max-width: 280px;
     margin: 0 auto;
+    font-size: 0.875rem;
 }
 
 /* ============================================
@@ -932,11 +963,12 @@ textarea.form-input {
     transform: translateX(-50%) translateY(100px);
     background: var(--color-bg-card);
     color: var(--color-text-primary);
-    padding: var(--spacing-md) var(--spacing-xl);
+    padding: 12px 20px;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--color-border);
     font-size: 0.875rem;
+    font-weight: 500;
     z-index: 200;
     opacity: 0;
     visibility: hidden;
@@ -951,10 +983,13 @@ textarea.form-input {
 
 .toast-success {
     border-color: var(--color-success);
+    background: #f0fdf4;
+    color: var(--color-success);
 }
 
 .toast-error {
     border-color: var(--color-error);
+    background: #fef2f2;
     color: var(--color-error);
 }
 
@@ -1037,15 +1072,17 @@ textarea.form-input {
     }
     
     .auth-card {
-        padding: var(--spacing-xl);
+        padding: var(--spacing-lg);
     }
     
     h1 {
-        font-size: 2rem;
+        font-size: 1.75rem;
     }
     
     .app-header-inner {
         flex-wrap: wrap;
+        height: auto;
+        padding: var(--spacing-sm) 0;
     }
     
     .user-email {
@@ -1053,30 +1090,30 @@ textarea.form-input {
     }
     
     .vault-header {
-        flex-direction: column;
-        align-items: stretch;
+        grid-template-columns: 1fr;
+        gap: var(--spacing-md);
     }
     
     .vault-header-actions {
-        flex-direction: column;
-    }
-    
-    .vault-search {
-        max-width: none;
         width: 100%;
     }
     
-    .password-card {
-        flex-direction: column;
-        align-items: stretch;
+    .vault-search {
+        flex: 1;
+        width: auto;
     }
     
-    .password-card-header {
-        margin-bottom: var(--spacing-md);
+    .password-card {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
     }
     
     .password-card-actions {
         justify-content: flex-end;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1086,31 +1123,41 @@ textarea.form-input {
     }
     
     .auth-card {
-        padding: var(--spacing-lg);
+        padding: var(--spacing-md);
     }
     
     .modal {
-        margin: var(--spacing-md);
+        margin: var(--spacing-sm);
     }
     
     .modal-body {
-        padding: var(--spacing-lg);
+        padding: var(--spacing-md);
     }
 
     .app-header-actions {
-        gap: var(--spacing-sm);
+        gap: var(--spacing-xs);
     }
 
     .btn-sm {
-        padding: var(--spacing-xs) var(--spacing-sm);
+        padding: 6px 10px;
         font-size: 0.75rem;
+    }
+
+    .password-card-header {
+        gap: var(--spacing-sm);
+    }
+
+    .password-card-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 0.875rem;
     }
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -1125,4 +1172,12 @@ textarea.form-input {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-muted);
+}
+
+/* ============================================
+   Delete Vault Modal
+   ============================================ */
+.delete-vault-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
 }
