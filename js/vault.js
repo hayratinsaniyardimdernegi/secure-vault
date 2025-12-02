@@ -1,7 +1,7 @@
 /**
- * Vault Module
+ * Kasa Modülü
  * =============
- * Multi-vault password manager with client-side encryption
+ * İstemci tarafı şifreleme ile çoklu kasa şifre yöneticisi
  */
 
 const VaultModule = (function () {
@@ -22,11 +22,11 @@ const VaultModule = (function () {
     let deleteVaultTargetId = null;
 
     /**
-     * INITIALIZATION
+     * BAŞLATMA
      */
     async function init() {
         if (!window.SupabaseClient.isConfigured()) {
-            alert("Supabase is not configured. Please check js/supabaseClient.js");
+            alert("Supabase yapılandırılmamış. Lütfen js/supabaseClient.js dosyasını kontrol edin");
             return;
         }
 
@@ -51,23 +51,23 @@ const VaultModule = (function () {
     }
 
     /**
-     * Cache DOM elements for performance
+     * Performans için DOM elemanlarını önbelleğe al
      */
     function cacheElements() {
         elements = {
-            // Modals
+            // Modallar
             vaultSelectionModal: document.getElementById('vault-selection-modal'),
             createVaultModal: document.getElementById('create-vault-modal'),
             unlockModal: document.getElementById('unlock-modal'),
             addModal: document.getElementById('add-modal'),
             deleteModal: document.getElementById('delete-modal'),
 
-            // Vault selection
+            // Kasa seçimi
             vaultList: document.getElementById('vault-list'),
             openExistingVaultBtn: document.getElementById('open-existing-vault-btn'),
             createNewVaultBtn: document.getElementById('create-new-vault-btn'),
 
-            // Create vault
+            // Kasa oluştur
             newVaultName: document.getElementById('new-vault-name'),
             newVaultMasterPassword: document.getElementById('new-vault-master-password'),
             newVaultConfirmPassword: document.getElementById('new-vault-confirm-password'),
@@ -77,28 +77,33 @@ const VaultModule = (function () {
             newVaultPasswordStrengthBar: document.getElementById('new-vault-password-strength-bar'),
             newVaultPasswordStrengthText: document.getElementById('new-vault-password-strength-text'),
 
-            // Unlock
+            // Kilit aç
             masterPasswordInput: document.getElementById('master-password'),
             unlockBtn: document.getElementById('unlock-btn'),
             unlockError: document.getElementById('unlock-error'),
             unlockVaultName: document.getElementById('unlock-vault-name'),
             backToVaultSelectionBtn: document.getElementById('back-to-vault-selection-btn'),
 
-            // Vault main
+            // Ana kasa
             vaultContainer: document.getElementById('vault-container'),
             currentVaultName: document.getElementById('current-vault-name'),
             currentVaultSubtitle: document.getElementById('current-vault-subtitle'),
             passwordList: document.getElementById('password-list'),
             emptyState: document.getElementById('empty-state'),
 
-            // Header buttons
+            // Başlık butonları
             logoutBtn: document.getElementById('logout-btn'),
             lockBtn: document.getElementById('lock-btn'),
             addNewBtn: document.getElementById('add-new-btn'),
             userEmail: document.getElementById('user-email'),
             userAvatar: document.getElementById('user-avatar'),
 
-            // Add/Edit form
+            // Modal çıkış butonları
+            modalLogoutBtnSelection: document.getElementById('modal-logout-btn-selection'),
+            modalLogoutBtnCreate: document.getElementById('modal-logout-btn-create'),
+            modalLogoutBtnUnlock: document.getElementById('modal-logout-btn-unlock'),
+
+            // Ekle/Düzenle formu
             addModalTitle: document.getElementById('add-modal-title'),
             addError: document.getElementById('add-error'),
             siteNameInput: document.getElementById('site-name'),
@@ -110,17 +115,17 @@ const VaultModule = (function () {
             savePasswordBtn: document.getElementById('save-password-btn'),
             cancelAddBtn: document.getElementById('cancel-add-btn'),
 
-            // Delete
+            // Sil
             confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
             cancelDeleteBtn: document.getElementById('cancel-delete-btn'),
 
-            // Delete Vault
+            // Kasa Sil
             deleteVaultModal: document.getElementById('delete-vault-modal'),
             deleteVaultName: document.getElementById('delete-vault-name'),
             confirmDeleteVaultBtn: document.getElementById('confirm-delete-vault-btn'),
             cancelDeleteVaultBtn: document.getElementById('cancel-delete-vault-btn'),
 
-            // Search
+            // Arama
             searchInput: document.getElementById('search-input'),
 
             // Toast
@@ -129,10 +134,10 @@ const VaultModule = (function () {
     }
 
     /**
-     * Setup event listeners
+     * Olay dinleyicilerini ayarla
      */
     function setupEventListeners() {
-        // Vault selection
+        // Kasa seçimi
         if (elements.createNewVaultBtn) {
             elements.createNewVaultBtn.addEventListener('click', showCreateVaultModal);
         }
@@ -140,12 +145,12 @@ const VaultModule = (function () {
             elements.openExistingVaultBtn.addEventListener('click', handleOpenExistingVaultClick);
         }
 
-        // Vault list click (selection)
+        // Kasa listesi tıklama (seçim)
         if (elements.vaultList) {
             elements.vaultList.addEventListener('click', handleVaultListClick);
         }
 
-        // Create vault modal
+        // Kasa oluştur modal
         if (elements.confirmCreateVaultBtn) {
             elements.confirmCreateVaultBtn.addEventListener('click', handleCreateVault);
         }
@@ -156,7 +161,7 @@ const VaultModule = (function () {
             elements.newVaultMasterPassword.addEventListener('input', updateNewVaultPasswordStrength);
         }
 
-        // Unlock
+        // Kilit aç
         if (elements.unlockBtn) {
             elements.unlockBtn.addEventListener('click', handleUnlock);
         }
@@ -174,7 +179,7 @@ const VaultModule = (function () {
             });
         }
 
-        // Add / Edit
+        // Ekle / Düzenle
         if (elements.addNewBtn) {
             elements.addNewBtn.addEventListener('click', () => openAddModal());
         }
@@ -188,7 +193,7 @@ const VaultModule = (function () {
             elements.cancelAddBtn.addEventListener('click', closeAddModal);
         }
 
-        // Delete
+        // Sil
         if (elements.confirmDeleteBtn) {
             elements.confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
         }
@@ -196,7 +201,7 @@ const VaultModule = (function () {
             elements.cancelDeleteBtn.addEventListener('click', closeDeleteModal);
         }
 
-        // Delete Vault
+        // Kasa Sil
         if (elements.confirmDeleteVaultBtn) {
             elements.confirmDeleteVaultBtn.addEventListener('click', handleConfirmDeleteVault);
         }
@@ -204,12 +209,12 @@ const VaultModule = (function () {
             elements.cancelDeleteVaultBtn.addEventListener('click', closeDeleteVaultModal);
         }
 
-        // Search
+        // Arama
         if (elements.searchInput) {
             elements.searchInput.addEventListener('input', handleSearch);
         }
 
-        // Lock & Logout
+        // Kilitle & Çıkış
         if (elements.lockBtn) {
             elements.lockBtn.addEventListener('click', handleLock);
         }
@@ -217,7 +222,18 @@ const VaultModule = (function () {
             elements.logoutBtn.addEventListener('click', handleLogout);
         }
 
-        // Modal backdrop click to close
+        // Modal çıkış butonları
+        if (elements.modalLogoutBtnSelection) {
+            elements.modalLogoutBtnSelection.addEventListener('click', handleLogout);
+        }
+        if (elements.modalLogoutBtnCreate) {
+            elements.modalLogoutBtnCreate.addEventListener('click', handleLogout);
+        }
+        if (elements.modalLogoutBtnUnlock) {
+            elements.modalLogoutBtnUnlock.addEventListener('click', handleLogout);
+        }
+
+        // Modal arka plan tıklama ile kapatma
         document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
             backdrop.addEventListener('click', (e) => {
                 if (e.target === backdrop) {
@@ -225,14 +241,14 @@ const VaultModule = (function () {
                     if (backdrop === elements.deleteModal) closeDeleteModal();
                     if (backdrop === elements.deleteVaultModal) closeDeleteVaultModal();
                     if (backdrop === elements.createVaultModal) hideCreateVaultModal();
-                    // Don't close vault selection or unlock on backdrop click
+                    // Kasa seçimi veya kilit açma arka plan tıklamasıyla kapanmaz
                 }
             });
         });
     }
 
     /** ----------------------------------
-     *  VAULT OPERATIONS
+     *  KASA İŞLEMLERİ
      *  ---------------------------------- */
 
     async function loadVaults() {
@@ -247,8 +263,8 @@ const VaultModule = (function () {
             vaults = data || [];
             renderVaultList();
         } catch (error) {
-            console.error('Load vaults error:', error);
-            showToast('Failed to load vaults', 'error');
+            console.error('Kasa yükleme hatası:', error);
+            showToast('Kasalar yüklenemedi', 'error');
         }
     }
 
@@ -265,7 +281,7 @@ const VaultModule = (function () {
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                <p>No vaults yet. Create your first vault to get started.</p>
+                <p>Henüz kasa yok. Başlamak için ilk kasanızı oluşturun.</p>
             `;
             elements.vaultList.appendChild(info);
             return;
@@ -294,7 +310,7 @@ const VaultModule = (function () {
             const subtitle = document.createElement('div');
             subtitle.className = 'vault-list-subtitle';
             const date = new Date(vault.created_at);
-            subtitle.textContent = `Created ${date.toLocaleDateString()}`;
+            subtitle.textContent = `Oluşturulma: ${date.toLocaleDateString('tr-TR')}`;
 
             content.appendChild(title);
             content.appendChild(subtitle);
@@ -304,7 +320,7 @@ const VaultModule = (function () {
 
             const deleteBtn = document.createElement('button');
             deleteBtn.className = 'vault-list-delete';
-            deleteBtn.title = 'Delete vault';
+            deleteBtn.title = 'Kasayı sil';
             deleteBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
                     <polyline points="3,6 5,6 21,6"></polyline>
@@ -406,22 +422,22 @@ const VaultModule = (function () {
         const confirmPassword = elements.newVaultConfirmPassword ? elements.newVaultConfirmPassword.value : '';
 
         if (!name) {
-            showCreateVaultError('Please enter a vault name.');
+            showCreateVaultError('Lütfen bir kasa adı girin.');
             return;
         }
 
         if (!password) {
-            showCreateVaultError('Please enter a master password.');
+            showCreateVaultError('Lütfen bir ana şifre girin.');
             return;
         }
 
         if (password.length < 8) {
-            showCreateVaultError('Master password must be at least 8 characters.');
+            showCreateVaultError('Ana şifre en az 8 karakter olmalıdır.');
             return;
         }
 
         if (password !== confirmPassword) {
-            showCreateVaultError('Passwords do not match.');
+            showCreateVaultError('Şifreler eşleşmiyor.');
             return;
         }
 
@@ -452,11 +468,11 @@ const VaultModule = (function () {
             }
 
             await loadPasswords();
-            showToast('Vault created successfully!');
+            showToast('Kasa başarıyla oluşturuldu!');
 
         } catch (error) {
-            console.error('Create vault error:', error);
-            showCreateVaultError('Failed to create vault. Please try again.');
+            console.error('Kasa oluşturma hatası:', error);
+            showCreateVaultError('Kasa oluşturulamadı. Lütfen tekrar deneyin.');
         }
     }
 
@@ -482,10 +498,10 @@ const VaultModule = (function () {
 
         const strengthLevels = {
             0: { width: '0%', label: '', color: '' },
-            1: { width: '25%', label: 'Weak', color: 'var(--color-error)' },
-            2: { width: '50%', label: 'Fair', color: 'var(--color-warning)' },
-            3: { width: '75%', label: 'Strong', color: 'var(--color-info)' },
-            4: { width: '100%', label: 'Very Strong', color: 'var(--color-success)' }
+            1: { width: '25%', label: 'Zayıf', color: 'var(--color-error)' },
+            2: { width: '50%', label: 'Orta', color: 'var(--color-warning)' },
+            3: { width: '75%', label: 'Güçlü', color: 'var(--color-info)' },
+            4: { width: '100%', label: 'Çok Güçlü', color: 'var(--color-success)' }
         };
 
         const level = strengthLevels[strength];
@@ -497,11 +513,11 @@ const VaultModule = (function () {
 
     function handleOpenExistingVaultClick() {
         if (!vaults.length) {
-            showToast('Please create a vault first.', 'error');
+            showToast('Lütfen önce bir kasa oluşturun.', 'error');
             return;
         }
         if (!currentVaultId) {
-            showToast('Please select a vault from the list.', 'error');
+            showToast('Lütfen listeden bir kasa seçin.', 'error');
             return;
         }
 
@@ -517,12 +533,12 @@ const VaultModule = (function () {
 
     function updateCurrentVaultInfo() {
         if (elements.currentVaultName) {
-            elements.currentVaultName.textContent = currentVaultName || 'Vault';
+            elements.currentVaultName.textContent = currentVaultName || 'Kasa';
         }
     }
 
     /** ----------------------------------
-     *  DELETE VAULT
+     *  KASA SİL
      *  ---------------------------------- */
 
     function showDeleteVaultModal(vaultId, vaultName) {
@@ -546,7 +562,7 @@ const VaultModule = (function () {
         if (!deleteVaultTargetId) return;
 
         try {
-            // First delete all passwords in this vault
+            // Önce bu kasadaki tüm şifreleri sil
             const { error: passwordsError } = await supabase
                 .from('passwords')
                 .delete()
@@ -554,7 +570,7 @@ const VaultModule = (function () {
 
             if (passwordsError) throw passwordsError;
 
-            // Then delete the vault itself
+            // Sonra kasayı sil
             const { error: vaultError } = await supabase
                 .from('vaults')
                 .delete()
@@ -562,10 +578,10 @@ const VaultModule = (function () {
 
             if (vaultError) throw vaultError;
 
-            // Update local state
+            // Yerel durumu güncelle
             vaults = vaults.filter(v => v.id !== deleteVaultTargetId);
             
-            // If deleted vault was current, reset selection
+            // Silinen kasa mevcut kasa ise, seçimi sıfırla
             if (currentVaultId === deleteVaultTargetId) {
                 currentVaultId = null;
                 currentVaultName = '';
@@ -573,16 +589,16 @@ const VaultModule = (function () {
 
             renderVaultList();
             closeDeleteVaultModal();
-            showToast('Vault deleted successfully');
+            showToast('Kasa başarıyla silindi');
 
         } catch (error) {
-            console.error('Delete vault error:', error);
-            showToast('Failed to delete vault', 'error');
+            console.error('Kasa silme hatası:', error);
+            showToast('Kasa silinemedi', 'error');
         }
     }
 
     /** ----------------------------------
-     *  UNLOCK (MASTER PASSWORD)
+     *  KİLİT AÇ (ANA ŞİFRE)
      *  ---------------------------------- */
 
     function showUnlockModal() {
@@ -594,7 +610,7 @@ const VaultModule = (function () {
             elements.unlockError.textContent = '';
         }
         if (elements.unlockVaultName) {
-            elements.unlockVaultName.textContent = `Enter your master password to unlock "${currentVaultName}".`;
+            elements.unlockVaultName.textContent = `"${currentVaultName}" kasasını açmak için ana şifrenizi girin.`;
         }
         if (elements.masterPasswordInput) {
             elements.masterPasswordInput.value = '';
@@ -612,7 +628,7 @@ const VaultModule = (function () {
         const mp = elements.masterPasswordInput ? elements.masterPasswordInput.value : '';
 
         if (!mp) {
-            showUnlockError('Please enter your master password.');
+            showUnlockError('Lütfen ana şifrenizi girin.');
             return;
         }
 
@@ -626,7 +642,7 @@ const VaultModule = (function () {
 
             await loadPasswords();
             
-            // Validate master password by trying to decrypt first password (if any)
+            // İlk şifreyi çözmeye çalışarak ana şifreyi doğrula (varsa)
             if (passwords.length > 0) {
                 try {
                     const item = passwords[0];
@@ -638,21 +654,21 @@ const VaultModule = (function () {
                         masterPassword
                     );
                 } catch (decryptError) {
-                    // Wrong master password
+                    // Yanlış ana şifre
                     masterPassword = null;
                     if (elements.vaultContainer) {
                         elements.vaultContainer.classList.add('hidden');
                     }
                     showUnlockModal();
-                    showUnlockError('Incorrect master password. Please try again.');
+                    showUnlockError('Yanlış ana şifre. Lütfen tekrar deneyin.');
                     return;
                 }
             }
 
             sessionStorage.setItem('vaultUnlocked', '1');
-            showToast('Vault unlocked successfully!');
+            showToast('Kasa başarıyla açıldı!');
         } catch (error) {
-            showUnlockError(error.message || 'Failed to unlock vault');
+            showUnlockError(error.message || 'Kasa açılamadı');
         }
     }
 
@@ -664,12 +680,12 @@ const VaultModule = (function () {
     }
 
     /** ----------------------------------
-     *  PASSWORD CRUD
+     *  ŞİFRE CRUD
      *  ---------------------------------- */
 
     async function loadPasswords() {
         if (!currentVaultId) {
-            console.warn('No current vault selected');
+            console.warn('Seçili kasa yok');
             return;
         }
 
@@ -685,8 +701,8 @@ const VaultModule = (function () {
             passwords = data || [];
             renderPasswords();
         } catch (error) {
-            console.error('Load passwords error:', error);
-            showToast('Failed to load passwords', 'error');
+            console.error('Şifre yükleme hatası:', error);
+            showToast('Şifreler yüklenemedi', 'error');
         }
     }
 
@@ -711,7 +727,7 @@ const VaultModule = (function () {
             card.className = 'password-card';
             card.dataset.id = item.id;
 
-            // Get first letter for icon
+            // İkon için ilk harf
             const firstLetter = (item.site_name || 'P').charAt(0).toUpperCase();
 
             card.innerHTML = `
@@ -724,25 +740,25 @@ const VaultModule = (function () {
                     </div>
                 </div>
                 <div class="password-card-actions">
-                    <button class="btn-icon" title="Copy username" data-action="copy-user">
+                    <button class="btn-icon" title="Kullanıcı adını kopyala" data-action="copy-user">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                             <circle cx="12" cy="7" r="4"></circle>
                         </svg>
                     </button>
-                    <button class="btn-icon" title="Copy password" data-action="copy-pass">
+                    <button class="btn-icon" title="Şifreyi kopyala" data-action="copy-pass">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
                     </button>
-                    <button class="btn-icon" title="Edit" data-action="edit">
+                    <button class="btn-icon" title="Düzenle" data-action="edit">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                     </button>
-                    <button class="btn-icon btn-icon-danger" title="Delete" data-action="delete">
+                    <button class="btn-icon btn-icon-danger" title="Sil" data-action="delete">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                             <polyline points="3,6 5,6 21,6"></polyline>
                             <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
@@ -751,7 +767,7 @@ const VaultModule = (function () {
                 </div>
             `;
 
-            // Add event listeners
+            // Olay dinleyicileri ekle
             card.querySelector('[data-action="copy-user"]').addEventListener('click', () => copyUsername(item.id));
             card.querySelector('[data-action="copy-pass"]').addEventListener('click', () => showPasswordAction(item.id));
             card.querySelector('[data-action="edit"]').addEventListener('click', () => editPasswordAction(item.id));
@@ -772,7 +788,7 @@ const VaultModule = (function () {
         editTargetId = item ? item.id : null;
 
         if (elements.addModalTitle) {
-            elements.addModalTitle.textContent = editTargetId ? 'Edit Password' : 'Add Password';
+            elements.addModalTitle.textContent = editTargetId ? 'Şifreyi Düzenle' : 'Şifre Ekle';
         }
         if (elements.addError) {
             elements.addError.classList.add('hidden');
@@ -785,7 +801,7 @@ const VaultModule = (function () {
             elements.usernameInput.value = item.username || '';
             elements.notesInput.value = item.notes || '';
             elements.passwordInput.value = '';
-            elements.passwordInput.placeholder = 'Leave blank to keep current password';
+            elements.passwordInput.placeholder = 'Mevcut şifreyi korumak için boş bırakın';
         } else {
             elements.siteNameInput.value = '';
             elements.siteUrlInput.value = '';
@@ -809,7 +825,7 @@ const VaultModule = (function () {
 
     async function handleSavePassword() {
         if (!currentVaultId) {
-            showAddError('Please select and unlock a vault first.');
+            showAddError('Lütfen önce bir kasa seçin ve kilidi açın.');
             return;
         }
 
@@ -820,13 +836,13 @@ const VaultModule = (function () {
         const notes = elements.notesInput.value.trim();
 
         if (!siteName || !username) {
-            showAddError('Site name and username are required.');
+            showAddError('Site adı ve kullanıcı adı zorunludur.');
             return;
         }
 
-        // For new entries, password is required
+        // Yeni kayıtlar için şifre zorunludur
         if (!editTargetId && !plainPassword) {
-            showAddError('Password is required for new entries.');
+            showAddError('Yeni kayıtlar için şifre zorunludur.');
             return;
         }
 
@@ -853,16 +869,16 @@ const VaultModule = (function () {
             }
 
             if (editTargetId) {
-                // Update existing
+                // Mevcut kaydı güncelle
                 const { error } = await supabase
                     .from('passwords')
                     .update(passwordData)
                     .eq('id', editTargetId);
 
                 if (error) throw error;
-                showToast('Password updated successfully');
+                showToast('Şifre başarıyla güncellendi');
             } else {
-                // Create new
+                // Yeni oluştur
                 passwordData.created_at = new Date().toISOString();
 
                 const { error } = await supabase
@@ -870,14 +886,14 @@ const VaultModule = (function () {
                     .insert([passwordData]);
 
                 if (error) throw error;
-                showToast('Password added successfully');
+                showToast('Şifre başarıyla eklendi');
             }
 
             await loadPasswords();
             closeAddModal();
         } catch (error) {
-            console.error('Save password error:', error);
-            showAddError(error.message || 'Failed to save password');
+            console.error('Şifre kaydetme hatası:', error);
+            showAddError(error.message || 'Şifre kaydedilemedi');
         }
     }
 
@@ -896,7 +912,7 @@ const VaultModule = (function () {
         setTimeout(() => {
             elements.passwordInput.type = 'password';
         }, 2000);
-        showToast('Strong password generated');
+        showToast('Güçlü şifre oluşturuldu');
     }
 
     function deletePasswordAction(id) {
@@ -924,12 +940,12 @@ const VaultModule = (function () {
 
             if (error) throw error;
 
-            showToast('Password deleted');
+            showToast('Şifre silindi');
             await loadPasswords();
             closeDeleteModal();
         } catch (error) {
-            console.error('Delete password error:', error);
-            showToast('Failed to delete password', 'error');
+            console.error('Şifre silme hatası:', error);
+            showToast('Şifre silinemedi', 'error');
         }
     }
 
@@ -938,7 +954,7 @@ const VaultModule = (function () {
         if (!item) return;
 
         if (!masterPassword) {
-            showToast('Please unlock the vault first.', 'error');
+            showToast('Lütfen önce kasanın kilidini açın.', 'error');
             return;
         }
 
@@ -951,10 +967,10 @@ const VaultModule = (function () {
                 masterPassword
             );
             await copyToClipboard(plain);
-            showToast('Password copied to clipboard');
+            showToast('Şifre panoya kopyalandı');
         } catch (error) {
-            console.error('Show password error:', error);
-            showToast('Failed to decrypt password. Check your master password.', 'error');
+            console.error('Şifre gösterme hatası:', error);
+            showToast('Şifre çözülemedi. Ana şifrenizi kontrol edin.', 'error');
         }
     }
 
@@ -962,7 +978,7 @@ const VaultModule = (function () {
         const item = passwords.find(p => p.id === id);
         if (!item) return;
         await copyToClipboard(item.username);
-        showToast('Username copied');
+        showToast('Kullanıcı adı kopyalandı');
     }
 
     function editPasswordAction(id) {
@@ -972,7 +988,7 @@ const VaultModule = (function () {
     }
 
     /** ----------------------------------
-     *  SEARCH
+     *  ARAMA
      *  ---------------------------------- */
 
     function handleSearch() {
@@ -995,7 +1011,7 @@ const VaultModule = (function () {
     }
 
     /** ----------------------------------
-     *  LOCK & LOGOUT
+     *  KİLİTLE & ÇIKIŞ
      *  ---------------------------------- */
 
     function handleLock() {
@@ -1017,21 +1033,21 @@ const VaultModule = (function () {
             sessionStorage.removeItem('vaultUnlocked');
             window.location.href = 'index.html';
         } catch (error) {
-            console.error('Logout error:', error);
-            showToast('Failed to sign out', 'error');
+            console.error('Çıkış hatası:', error);
+            showToast('Çıkış yapılamadı', 'error');
         }
     }
 
     /** ----------------------------------
-     *  HELPERS
+     *  YARDIMCILAR
      *  ---------------------------------- */
 
     async function copyToClipboard(text) {
         try {
             await navigator.clipboard.writeText(text);
         } catch (error) {
-            console.error('Clipboard error:', error);
-            // Fallback for older browsers
+            console.error('Pano hatası:', error);
+            // Eski tarayıcılar için yedek
             const textArea = document.createElement('textarea');
             textArea.value = text;
             textArea.style.position = 'fixed';
@@ -1055,7 +1071,7 @@ const VaultModule = (function () {
             elements.toast.classList.add('toast-success');
         }
 
-        // Trigger animation
+        // Animasyonu tetikle
         elements.toast.classList.add('show');
 
         setTimeout(() => {
@@ -1063,14 +1079,14 @@ const VaultModule = (function () {
         }, 3000);
     }
 
-    // Initialize when DOM is ready
+    // DOM hazır olduğunda başlat
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
 
-    // Public API
+    // Genel API
     return {
         copyUsername,
         showPassword: showPasswordAction,

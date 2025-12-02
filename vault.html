@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureVault - My Vault</title>
+    <title>GüvenliKasa - Kasam</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,9 +26,9 @@
                         <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
                     </svg>
                 </div>
-                <h2>Select a Vault</h2>
+                <h2>Kasa Seçin</h2>
                 <p class="text-muted mt-md mb-lg">
-                    Choose an existing vault to open or create a new one.
+                    Mevcut bir kasayı açın veya yeni bir kasa oluşturun.
                 </p>
 
                 <div id="vault-list" class="vault-list">
@@ -37,10 +37,18 @@
 
                 <div class="button-group mt-lg">
                     <button class="btn btn-primary btn-full" id="open-existing-vault-btn">
-                        Open Selected Vault
+                        Seçili Kasayı Aç
                     </button>
                     <button class="btn btn-secondary btn-full mt-sm" id="create-new-vault-btn">
-                        Create New Vault
+                        Yeni Kasa Oluştur
+                    </button>
+                    <button class="btn btn-outline btn-full mt-sm" id="modal-logout-btn-selection">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16,17 21,12 16,7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Çıkış Yap
                     </button>
                 </div>
             </div>
@@ -57,36 +65,36 @@
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
                 </div>
-                <h2>Create New Vault</h2>
+                <h2>Yeni Kasa Oluştur</h2>
                 <p class="text-muted mt-md mb-md">
-                    Give your vault a name and set a master password.
+                    Kasanıza bir isim verin ve ana şifre belirleyin.
                 </p>
 
                 <div class="info-box mb-lg">
-                    <strong>Important:</strong> Your master password encrypts all passwords in this vault. 
-                    It is never sent to our servers and cannot be recovered if forgotten.
+                    <strong>Önemli:</strong> Ana şifreniz bu kasadaki tüm şifreleri şifreler. 
+                    Sunucularımıza asla gönderilmez ve unutulursa kurtarılamaz.
                 </div>
 
                 <div class="message message-error hidden" id="create-vault-error"></div>
 
                 <div class="form-group">
-                    <label class="form-label" for="new-vault-name">Vault Name</label>
+                    <label class="form-label" for="new-vault-name">Kasa Adı</label>
                     <input 
                         type="text" 
                         id="new-vault-name" 
                         class="form-input" 
-                        placeholder="e.g., Personal, Work, Finance"
+                        placeholder="örn: Kişisel, İş, Finans"
                         autocomplete="off"
                     >
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="new-vault-master-password">Master Password</label>
+                    <label class="form-label" for="new-vault-master-password">Ana Şifre</label>
                     <input 
                         type="password" 
                         id="new-vault-master-password" 
                         class="form-input form-input-password" 
-                        placeholder="Create a strong master password"
+                        placeholder="Güçlü bir ana şifre oluşturun"
                         autocomplete="off"
                     >
                     <div class="password-strength">
@@ -98,22 +106,30 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="new-vault-confirm-password">Confirm Master Password</label>
+                    <label class="form-label" for="new-vault-confirm-password">Ana Şifre Tekrar</label>
                     <input 
                         type="password" 
                         id="new-vault-confirm-password" 
                         class="form-input form-input-password" 
-                        placeholder="Re-enter your master password"
+                        placeholder="Ana şifrenizi tekrar girin"
                         autocomplete="off"
                     >
                 </div>
 
                 <div class="button-group mt-lg">
                     <button class="btn btn-primary btn-full" id="confirm-create-vault-btn">
-                        Create Vault
+                        Kasa Oluştur
                     </button>
                     <button class="btn btn-secondary btn-full mt-sm" id="cancel-create-vault-btn">
-                        Cancel
+                        İptal
+                    </button>
+                    <button class="btn btn-outline btn-full mt-sm" id="modal-logout-btn-create">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16,17 21,12 16,7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        Çıkış Yap
                     </button>
                 </div>
             </div>
@@ -130,37 +146,46 @@
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
                 </div>
-                <h2>Unlock Vault</h2>
+                <h2>Kasayı Aç</h2>
                 <p class="text-muted mt-md mb-md" id="unlock-vault-name">
-                    Enter your master password to unlock this vault.
+                    Bu kasayı açmak için ana şifrenizi girin.
                 </p>
 
                 <div class="message message-error hidden" id="unlock-error"></div>
 
                 <div class="form-group">
-                    <label class="form-label" for="master-password">Master Password</label>
+                    <label class="form-label" for="master-password">Ana Şifre</label>
                     <input 
                         type="password" 
                         id="master-password" 
                         class="form-input form-input-password" 
-                        placeholder="Enter your master password"
+                        placeholder="Ana şifrenizi girin"
                         autocomplete="off"
                     >
                 </div>
 
                 <button class="btn btn-primary btn-full" id="unlock-btn">
-                    Unlock Vault
+                    Kasayı Aç
                 </button>
 
                 <p class="text-muted text-center mt-lg security-note">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
                         <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
                     </svg>
-                    Your master password is used locally and never sent to our servers.
+                    Ana şifreniz yerel olarak kullanılır ve sunucularımıza asla gönderilmez.
                 </p>
 
                 <button class="btn btn-ghost btn-full mt-md" id="back-to-vault-selection-btn">
-                    ← Back to Vault Selection
+                    ← Kasa Seçimine Dön
+                </button>
+                
+                <button class="btn btn-outline btn-full mt-sm" id="modal-logout-btn-unlock">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16,17 21,12 16,7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Çıkış Yap
                 </button>
             </div>
         </div>
@@ -170,50 +195,50 @@
     <div class="modal-backdrop hidden" id="add-modal">
         <div class="modal modal-lg">
             <div class="modal-body">
-                <h2 id="add-modal-title">Add Password</h2>
+                <h2 id="add-modal-title">Şifre Ekle</h2>
                 <p class="text-muted mt-md mb-lg">
-                    This entry will be encrypted and stored in the current vault.
+                    Bu kayıt şifrelenecek ve mevcut kasada saklanacaktır.
                 </p>
 
                 <div class="message message-error hidden" id="add-error"></div>
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label" for="site-name">Site / App Name *</label>
+                        <label class="form-label" for="site-name">Site / Uygulama Adı *</label>
                         <input 
                             type="text" 
                             id="site-name" 
                             class="form-input" 
-                            placeholder="e.g., Gmail, Netflix, GitHub"
+                            placeholder="örn: Gmail, Netflix, GitHub"
                             required
                         >
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="site-url">URL (optional)</label>
+                        <label class="form-label" for="site-url">URL (isteğe bağlı)</label>
                         <input 
                             type="url" 
                             id="site-url" 
                             class="form-input" 
-                            placeholder="https://example.com"
+                            placeholder="https://ornek.com"
                         >
                     </div>
                 </div>
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label" for="username">Username / Email *</label>
+                        <label class="form-label" for="username">Kullanıcı Adı / E-posta *</label>
                         <input 
                             type="text" 
                             id="username" 
                             class="form-input" 
-                            placeholder="your@email.com"
+                            placeholder="kullanici@email.com"
                             required
                         >
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="password">Password *</label>
+                        <label class="form-label" for="password">Şifre *</label>
                         <div class="input-group">
                             <input 
                                 type="password" 
@@ -223,28 +248,28 @@
                                 required
                             >
                             <button class="btn btn-secondary input-group-btn" id="generate-password-btn" type="button">
-                                Generate
+                                Oluştur
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="notes">Notes (optional)</label>
+                    <label class="form-label" for="notes">Notlar (isteğe bağlı)</label>
                     <textarea 
                         id="notes" 
                         class="form-input" 
                         rows="3" 
-                        placeholder="Security questions, recovery codes, etc."
+                        placeholder="Güvenlik soruları, kurtarma kodları vb."
                     ></textarea>
                 </div>
 
                 <div class="button-group mt-lg">
                     <button class="btn btn-primary btn-full" id="save-password-btn">
-                        Save Password
+                        Şifreyi Kaydet
                     </button>
                     <button class="btn btn-secondary btn-full mt-sm" id="cancel-add-btn">
-                        Cancel
+                        İptal
                     </button>
                 </div>
             </div>
@@ -263,14 +288,14 @@
                         <line x1="14" y1="11" x2="14" y2="17"></line>
                     </svg>
                 </div>
-                <h2>Delete Password</h2>
+                <h2>Şifreyi Sil</h2>
                 <p class="text-muted mt-md mb-lg">
-                    Are you sure you want to delete this password? This action cannot be undone.
+                    Bu şifreyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
                 </p>
 
                 <div class="button-group">
-                    <button class="btn btn-danger btn-full" id="confirm-delete-btn">Delete Password</button>
-                    <button class="btn btn-secondary btn-full mt-sm" id="cancel-delete-btn">Cancel</button>
+                    <button class="btn btn-danger btn-full" id="confirm-delete-btn">Şifreyi Sil</button>
+                    <button class="btn btn-secondary btn-full mt-sm" id="cancel-delete-btn">İptal</button>
                 </div>
             </div>
         </div>
@@ -288,17 +313,17 @@
                         <line x1="14" y1="11" x2="14" y2="17"></line>
                     </svg>
                 </div>
-                <h2>Delete Vault</h2>
+                <h2>Kasayı Sil</h2>
                 <p class="text-muted mt-md mb-md">
-                    Are you sure you want to delete "<span class="delete-vault-name" id="delete-vault-name"></span>"?
+                    "<span class="delete-vault-name" id="delete-vault-name"></span>" kasasını silmek istediğinizden emin misiniz?
                 </p>
                 <p class="text-muted mb-lg" style="font-size: 0.8125rem;">
-                    This will permanently delete the vault and all passwords stored in it. This action cannot be undone.
+                    Bu işlem kasayı ve içindeki tüm şifreleri kalıcı olarak silecektir. Bu işlem geri alınamaz.
                 </p>
 
                 <div class="button-group">
-                    <button class="btn btn-danger btn-full" id="confirm-delete-vault-btn">Delete Vault</button>
-                    <button class="btn btn-secondary btn-full mt-sm" id="cancel-delete-vault-btn">Cancel</button>
+                    <button class="btn btn-danger btn-full" id="confirm-delete-vault-btn">Kasayı Sil</button>
+                    <button class="btn btn-secondary btn-full mt-sm" id="cancel-delete-vault-btn">İptal</button>
                 </div>
             </div>
         </div>
@@ -317,8 +342,8 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="app-logo-title">SecureVault</h1>
-                    <p class="app-logo-subtitle">Encrypted Password Manager</p>
+                    <h1 class="app-logo-title">GüvenliKasa</h1>
+                    <p class="app-logo-subtitle">Şifreli Şifre Yöneticisi</p>
                 </div>
             </div>
 
@@ -327,20 +352,20 @@
                     <div class="user-avatar" id="user-avatar"></div>
                     <span class="user-email" id="user-email"></span>
                 </div>
-                <button class="btn btn-secondary btn-sm" id="lock-btn" title="Lock vault and return to vault selection">
+                <button class="btn btn-secondary btn-sm" id="lock-btn" title="Kasayı kilitle ve kasa seçimine dön">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
-                    Lock
+                    Kilitle
                 </button>
-                <button class="btn btn-outline btn-sm" id="logout-btn" title="Sign out of your account">
+                <button class="btn btn-outline btn-sm" id="logout-btn" title="Hesabınızdan çıkış yapın">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                         <polyline points="16,17 21,12 16,7"></polyline>
                         <line x1="21" y1="12" x2="9" y2="12"></line>
                     </svg>
-                    Sign Out
+                    Çıkış Yap
                 </button>
             </div>
         </div>
@@ -351,13 +376,13 @@
         <div class="container">
             <div class="vault-header">
                 <div class="vault-title-area">
-                    <h2 id="current-vault-name">My Vault</h2>
+                    <h2 id="current-vault-name">Kasam</h2>
                     <p class="text-muted" id="current-vault-subtitle">
                         <span class="vault-badge">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
                                 <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
                             </svg>
-                            Encrypted
+                            Şifreli
                         </span>
                     </p>
                 </div>
@@ -371,7 +396,7 @@
                             type="text" 
                             class="form-input" 
                             id="search-input" 
-                            placeholder="Search passwords..."
+                            placeholder="Şifrelerde ara..."
                         >
                     </div>
                     <button class="btn btn-primary" id="add-new-btn">
@@ -379,7 +404,7 @@
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Add Password
+                        Şifre Ekle
                     </button>
                 </div>
             </div>
@@ -392,9 +417,9 @@
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                         </svg>
                     </div>
-                    <h3>No passwords yet</h3>
+                    <h3>Henüz şifre yok</h3>
                     <p class="text-muted">
-                        This vault is empty. Click "Add Password" to store your first encrypted password.
+                        Bu kasa boş. İlk şifreli şifrenizi saklamak için "Şifre Ekle"ye tıklayın.
                     </p>
                 </div>
 

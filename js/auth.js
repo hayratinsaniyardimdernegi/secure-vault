@@ -1,7 +1,7 @@
 /**
- * Authentication Module
+ * Kimlik Doğrulama Modülü
  * ======================
- * Handles Supabase authentication: login, register, logout, and session management
+ * Supabase kimlik doğrulama işlemleri: giriş, kayıt, çıkış ve oturum yönetimi
  */
 
 const AuthModule = (function () {
@@ -10,48 +10,50 @@ const AuthModule = (function () {
 
     function init() {
         if (!window.SupabaseClient.isConfigured()) {
-            console.error("Supabase is not configured.");
-            alert("Supabase is not configured. Please check js/supabaseClient.js");
+            console.error("Supabase yapılandırılmamış.");
+            alert("Supabase yapılandırılmamış. Lütfen js/supabaseClient.js dosyasını kontrol edin");
             return;
         }
 
         cacheElements();
         setupEventListeners();
-        checkSession();
+        
+        // Her zaman giriş ekranından başla - otomatik yönlendirme yok
+        // checkSession(); - devre dışı bırakıldı
 
         supabase.auth.onAuthStateChange(handleAuthStateChange);
     }
 
     function cacheElements() {
         elements = {
-            // Forms
+            // Formlar
             loginForm: document.getElementById("login-form"),
             registerForm: document.getElementById("register-form"),
 
-            // Inputs
+            // Girişler
             loginEmail: document.getElementById("login-email"),
             loginPassword: document.getElementById("login-password"),
             registerEmail: document.getElementById("register-email"),
             registerPassword: document.getElementById("register-password"),
             registerConfirmPassword: document.getElementById("register-confirm-password"),
 
-            // Buttons
+            // Butonlar
             loginBtn: document.getElementById("login-btn"),
             registerBtn: document.getElementById("register-btn"),
             showRegisterBtn: document.getElementById("show-register"),
             showLoginBtn: document.getElementById("show-login"),
 
-            // Containers
+            // Konteynerlar
             loginContainer: document.getElementById("login-container"),
             registerContainer: document.getElementById("register-container"),
 
-            // Messages
+            // Mesajlar
             loginError: document.getElementById("login-error"),
             loginSuccess: document.getElementById("login-success"),
             registerError: document.getElementById("register-error"),
             registerSuccess: document.getElementById("register-success"),
 
-            // Password strength
+            // Şifre gücü
             passwordStrengthBar: document.getElementById("password-strength-bar"),
             passwordStrengthText: document.getElementById("password-strength-text"),
         };
@@ -95,7 +97,7 @@ const AuthModule = (function () {
         const password = elements.loginPassword.value;
 
         if (!email || !password) {
-            showError("Please fill in all fields", "login");
+            showError("Lütfen tüm alanları doldurun", "login");
             return;
         }
 
@@ -110,10 +112,10 @@ const AuthModule = (function () {
 
             if (error) throw error;
 
-            showSuccess("Login successful! Redirecting...", "login");
-            // Redirect handled by auth state change
+            showSuccess("Giriş başarılı! Yönlendiriliyorsunuz...", "login");
+            // Yönlendirme auth state change tarafından yapılacak
         } catch (err) {
-            console.error("Login error:", err);
+            console.error("Giriş hatası:", err);
             showError(getErrorMessage(err), "login");
         } finally {
             setButtonLoading(elements.loginBtn, false);
@@ -128,17 +130,17 @@ const AuthModule = (function () {
         const confirmPassword = elements.registerConfirmPassword.value;
 
         if (!email || !password || !confirmPassword) {
-            showError("Please fill in all fields", "register");
+            showError("Lütfen tüm alanları doldurun", "register");
             return;
         }
 
         if (password !== confirmPassword) {
-            showError("Passwords do not match", "register");
+            showError("Şifreler eşleşmiyor", "register");
             return;
         }
 
         if (password.length < 8) {
-            showError("Password must be at least 8 characters long", "register");
+            showError("Şifre en az 8 karakter olmalıdır", "register");
             return;
         }
 
@@ -155,19 +157,19 @@ const AuthModule = (function () {
 
             if (data.session) {
                 showSuccess(
-                    "Account created successfully! Redirecting...",
+                    "Hesap başarıyla oluşturuldu! Yönlendiriliyorsunuz...",
                     "register"
                 );
             } else {
                 showSuccess(
-                    "Account created! Please check your email to confirm your account.",
+                    "Hesap oluşturuldu! Lütfen hesabınızı doğrulamak için e-postanızı kontrol edin.",
                     "register"
                 );
                 elements.registerForm.reset();
                 updatePasswordStrength();
             }
         } catch (err) {
-            console.error("Register error:", err);
+            console.error("Kayıt hatası:", err);
             showError(getErrorMessage(err), "register");
         } finally {
             setButtonLoading(elements.registerBtn, false);
@@ -182,8 +184,8 @@ const AuthModule = (function () {
             sessionStorage.removeItem("vaultUnlocked");
             redirectToLogin();
         } catch (err) {
-            console.error("Logout error:", err);
-            alert("Logout failed. Please try again.");
+            console.error("Çıkış hatası:", err);
+            alert("Çıkış başarısız. Lütfen tekrar deneyin.");
         }
     }
 
@@ -194,7 +196,7 @@ const AuthModule = (function () {
                 redirectToVault();
             }
         } catch (err) {
-            console.error("Session check error:", err);
+            console.error("Oturum kontrol hatası:", err);
         }
     }
 
@@ -301,7 +303,7 @@ const AuthModule = (function () {
         if (isLoading) {
             button.disabled = true;
             button.dataset.originalText = button.textContent;
-            button.innerHTML = '<span class="spinner"></span> Please wait...';
+            button.innerHTML = '<span class="spinner"></span> Lütfen bekleyin...';
         } else {
             button.disabled = false;
             if (button.dataset.originalText) {
@@ -328,10 +330,10 @@ const AuthModule = (function () {
 
         const strengthLevels = {
             0: { width: "0%", label: "", color: "" },
-            1: { width: "25%", label: "Weak", color: "var(--color-error)" },
-            2: { width: "50%", label: "Fair", color: "var(--color-warning)" },
-            3: { width: "75%", label: "Strong", color: "var(--color-info)" },
-            4: { width: "100%", label: "Very Strong", color: "var(--color-success)" }
+            1: { width: "25%", label: "Zayıf", color: "var(--color-error)" },
+            2: { width: "50%", label: "Orta", color: "var(--color-warning)" },
+            3: { width: "75%", label: "Güçlü", color: "var(--color-info)" },
+            4: { width: "100%", label: "Çok Güçlü", color: "var(--color-success)" }
         };
 
         const level = strengthLevels[strength];
@@ -342,18 +344,18 @@ const AuthModule = (function () {
     }
 
     function getErrorMessage(error) {
-        if (!error) return "An unknown error occurred";
+        if (!error) return "Bilinmeyen bir hata oluştu";
 
         const msg = error.message || String(error);
 
         if (msg.toLowerCase().includes("invalid login credentials")) {
-            return "Invalid email or password";
+            return "Geçersiz e-posta veya şifre";
         }
         if (msg.toLowerCase().includes("email not confirmed")) {
-            return "Please confirm your email address before logging in";
+            return "Lütfen giriş yapmadan önce e-posta adresinizi doğrulayın";
         }
         if (msg.toLowerCase().includes("user already registered")) {
-            return "An account with this email already exists";
+            return "Bu e-posta adresiyle zaten bir hesap mevcut";
         }
 
         return msg;
