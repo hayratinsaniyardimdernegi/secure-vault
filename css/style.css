@@ -194,6 +194,25 @@ h3 {
     font-size: 0.875rem;
 }
 
+/* Logo Image Styles */
+.auth-logo-img {
+    margin: 0 auto var(--spacing-lg);
+    text-align: center;
+}
+
+.logo-image {
+    max-width: 220px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.header-logo-image {
+    height: 40px;
+    width: auto;
+    display: block;
+}
+
 /* ============================================
    Forms
    ============================================ */
